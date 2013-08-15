@@ -6,6 +6,7 @@ import os
 import unittest
 
 from lsl_toolkits import USRP as usrp
+from lsl_toolkits.USRP.common import fS
 
 
 __revision__ = "$Rev$"
@@ -53,6 +54,24 @@ class usrp_tests(unittest.TestCase):
 		
 		# Filter Code
 		self.assertEqual(frame.getFilterCode(), 0)
+		
+		fh.close()
+		
+	def test_usrp_timetags(self):
+		"""Test the time tags in a USRP file."""
+		
+		fh = open(usrpFile, 'rb')
+		frame = usrp.readFrame(fh)
+		tt = 1*frame.data.timeTag
+		ttSkip = int(fS / frame.getSampleRate() * frame.data.iq.size)
+		
+		for i in xrange(2, 6):
+			frame = usrp.readFrame(fh)
+			
+			self.assertEqual(frame.data.timeTag, tt+ttSkip)
+			tt = 1*frame.data.timeTag
+			
+		fh.close()
 		
 	def test_usrp_errors(self):
 		"""Test reading in all frames from a truncated USRP file."""
