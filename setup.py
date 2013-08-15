@@ -39,5 +39,6 @@ setup(
 				   'License :: OSI Approved :: GNU General Public License (GPL)',
 				   'Topic :: Scientific/Engineering :: Astronomy'],
   packages          = packages,
-  package_dir       = package_dirs
+  package_dir       = package_dirs,
+  scripts           = ['scripts/usrpCheckTimetags.py', 'scripts/usrpFileCheck.py', 'scripts/usrpSpectra.py', 'scripts/usrpTimeseries.py', 'scripts/usrpWaterfall.py']
 )
