@@ -17,11 +17,11 @@ class TestSuite(Command):
 	def finalize_options(self):
 		pass
 	def run(self):
-		from tests import test_s60
+		from tests import test_usrp
 		t = unittest.TestSuite()
 		r = unittest.TextTestRunner(verbosity=2)
 		loader = unittest.TestLoader()
-		t.addTests(loader.loadTestsFromModule(test_s60))
+		t.addTests(loader.loadTestsFromModule(test_usrp))
 		r.run(t)
 
 cmdClasses = {'test': TestSuite}
