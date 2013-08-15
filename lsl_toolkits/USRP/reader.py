@@ -384,7 +384,7 @@ def readFrame(filehandle, Verbose=False):
 		header[key] = out
 		
 	# Cleanup time
-	header['rx_time'] = (header['rx_time'][0], header['rx_time'][1])
+	header['rx_time'] = (header['rx_time'][0], header['rx_time'][2])
 		
 	# Extended header (optional)
 	if header['strt'] != 149:
@@ -421,7 +421,8 @@ def readFrame(filehandle, Verbose=False):
 		data.real = dataRaw
 		
 	# Build the frame
-	timeTag = int(header['rx_time'][0])*int(fS) + int(header['rx_time'][1]*fS)
+	timeTag = int(header['rx_time'][0])*int(fS) + int(header['rx_time'][1]*int(fS))
+	print header['rx_time'], timeTag, timeTag/fS
 	fHeader = FrameHeader(size=header['strt'], type=header['type'], complex=header['cplx'], sampleRate=header['rx_rate'])
 	fData = FrameData(size=header['bytes'], timeTag=timeTag, centralFreq=header['rx_freq'], iq=data)
 	newFrame = Frame(header=fHeader, data=fData)
