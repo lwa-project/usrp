@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Given a USRP file, plot the time averaged spectra."""
+"""
+Given a USRP file, plot the time averaged spectra.
+
+$Rev$
+$LastChangedBy$
+$LastChangedDate$
+"""
 
 import os
 import sys
@@ -250,7 +256,7 @@ def main(args):
 			# Read in the next frame and anticipate any problems that could occur
 			try:
 				cFrame = usrp.readFrame(fh, Verbose=False)
-			except IOError:
+			except:
 				break
 				
 			beam, tune, pol = cFrame.parseID()
