@@ -2,7 +2,7 @@
 
 """
 Python module to read in USRP data.  This module defines the following 
-classes for storing the DRX data found in a file:
+classes for storing the USRP data found in a file:
 
 Frame
   object that contains all data associated with a particular DRX frame.  
@@ -18,6 +18,16 @@ The functions defined in this module fall into two class:
 
 For reading in data, use the readFrame function.  It takes a python file-
 handle as an input and returns a fully-filled Frame object.
+
+For describing the format of data in the file, two function are provided:
+
+getBeamCount
+  read in the first few frames of an open file handle and return how many 
+  beams are present in the file.
+
+getFramesPerObs
+  read in the first several frames to see how many frames (tunings/polarizations)
+  are associated with each beam.
 """
 
 import copy
@@ -26,18 +36,24 @@ import struct
 
 from common import fS
 
-__version__ = '0.1'
+__version__ = '0.2'
 __revision__ = '$Rev$'
-__all__ = ['FrameHeader', 'FrameData', 'Frame', 'readFrame', 'getSampleRate', 'getFrameSize', '__version__', '__revision__', '__all__']
+__all__ = ['FrameHeader', 'FrameData', 'Frame', 'readFrame', 'getSampleRate', 'getFrameSize', 'getBeamCount', 'getFramesPerObs', 'filterCodes', '__version__', '__revision__', '__all__']
 
 
 _type2name = {0: 'b', 
-	     1: 's', 
-	     2: 'i', 
-	     3: 'l', 
-	     4: 'q', 
-	     5: 'f', 
-	     6: 'd'}
+		    1: 'h', 
+		    2: 'i', 
+		    3: 'l', 
+		    4: 'q', 
+		    5: 'f', 
+		    6: 'd'}
+
+
+# List of filter codes and their corresponding sample rates in Hz
+filterCodes = {}
+for i in xrange(9):
+	filterCodes[i] = fS / 2**(9-i)
 
 
 class FrameHeader(object):
@@ -54,20 +70,32 @@ class FrameHeader(object):
 		
 	def parseID(self):
 		"""
-		Placeholder for the ID of a USRP stream.  This isn't stored in the frame 
-		headers by default so a single value of '0' is returned.
+		Return the ID for a USRP stream.
+		
+		.. note:: 
+			This isn't stored in the frame headers by default a three element 
+			tuple of (0, 1, 0) is returned to be compatible with DRX.
 		"""
 		
-		pol = 0
-
-		return pol
-	
+		return (0,1,0)
+		
 	def getSampleRate(self):
 		"""
 		Return the sample rate of the data in samples/second.
 		"""
 		
 		return self.sampleRate
+		
+	def getFilterCode(self):
+		"""
+		Function to convert the sample rate in Hz to a filter code.
+		"""
+		
+		sampleCodes = {}
+		for key,value in filterCodes.iteritems():
+			sampleCodes[value] = key
+			
+		return sampleCodes[self.getSampleRate()]
 
 
 class FrameData(object):
@@ -86,8 +114,12 @@ class FrameData(object):
 		"""
 		Function to set the central frequency of the USRP data in Hz.
 		"""
-
-		return self.centralFreq
+		
+		centralFreq = 1.0*self.centralFreq
+		if centralFreq < 0:
+			centralFreq += fS
+			
+		return centralFreq
 
 
 class Frame(object):
@@ -124,6 +156,13 @@ class Frame(object):
 		"""
 		
 		return self.header.getSampleRate()
+		
+	def getFilterCode(self):
+		"""
+		Convenience wrapper for the Frame.FrameHeader.getFilterCode function.
+		"""
+		
+		return self.header.getFilterCode()
 		
 	def getTime(self):
 		"""
@@ -173,7 +212,7 @@ class Frame(object):
 		newFrame = copy.deepcopy(self)
 		newFrame *= y
 		return newFrame
-			
+		
 	def __imul__(self, y):
 		"""
 		In-place multiple the data sections of two frames together or 
@@ -185,7 +224,7 @@ class Frame(object):
 		except AttributeError:
 			self.data.iq *= y
 		return self
-			
+		
 	def __eq__(self, y):
 		"""
 		Check if the time tags of two frames are equal or if the time
@@ -197,7 +236,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX == tY:
 			return True
 		else:
@@ -214,7 +253,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX != tY:
 			return True
 		else:
@@ -231,7 +270,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX > tY:
 			return True
 		else:
@@ -249,7 +288,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX >= tY:
 			return True
 		else:
@@ -266,7 +305,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX < tY:
 			return True
 		else:
@@ -284,7 +323,7 @@ class Frame(object):
 			tY = y.data.timeTag
 		except AttributeError:
 			tY = y
-		
+			
 		if tX <= tY:
 			return True
 		else:
@@ -310,6 +349,10 @@ def readFrame(filehandle, Verbose=False):
 	"""
 	Function to read in a single USRP frame (header+data) and store the 
 	contents as a Frame object.
+	
+	.. note::
+		Even real-valued data is stored in the FrameData instance as a
+		complex64 array.
 	"""
 	
 	# Header
@@ -328,8 +371,8 @@ def readFrame(filehandle, Verbose=False):
 		## Unpack
 		out = struct.unpack('>%s' % typ, rawHeader[stop:stop+tln])
 	
-		## Deal with the tuple.  The time is the only one that has two 
-		## elements, so save them that way
+		## Deal with the tuple.  The time is the only one that has more than 
+		## one elements, so save it that way
 		if len(out) == 1:
 			out = out[0]
 			
@@ -339,6 +382,9 @@ def readFrame(filehandle, Verbose=False):
 			
 		## Store
 		header[key] = out
+		
+	# Cleanup time
+	header['rx_time'] = (header['rx_time'][0], header['rx_time'][1])
 		
 	# Extended header (optional)
 	if header['strt'] != 149:
@@ -363,19 +409,19 @@ def readFrame(filehandle, Verbose=False):
 	# Data
 	dataRaw = filehandle.read(header['bytes'])
 	if header['cplx']:
-		dataRaw = struct.unpack('>%ih' % (2*header['bytes']/header['size'],), dataRaw)
+		dataRaw = struct.unpack('>%i%s' % (2*header['bytes']/header['size'], header['type']), dataRaw)
 		
 		data = numpy.zeros( header['bytes']/header['size'], dtype=numpy.complex64)
 		data.real = dataRaw[0::2]
 		data.imag = dataRaw[1::2]
 	else:
-		dataRaw = struct.unpack('>%ih' % (header['bytes']/header['size'],), dataRaw)
+		dataRaw = struct.unpack('>%i%s' % (header['bytes']/header['size'], header['type']), dataRaw)
 		
 		data = numpy.zeros( header['bytes']/header['size'], dtype=numpy.int32)
-		data[:] = dataRaw
+		data.real = dataRaw
 		
 	# Build the frame
-	timeTag = header['rx_time'][0] * int(fS) + int(header['rx_time'][2]*fS)
+	timeTag = int(header['rx_time'][0])*int(fS) + int(header['rx_time'][1]*fS)
 	fHeader = FrameHeader(size=header['strt'], type=header['type'], complex=header['cplx'], sampleRate=header['rx_rate'])
 	fData = FrameData(size=header['bytes'], timeTag=timeTag, centralFreq=header['rx_freq'], iq=data)
 	newFrame = Frame(header=fHeader, data=fData)
@@ -383,10 +429,11 @@ def readFrame(filehandle, Verbose=False):
 	return newFrame
 
 
-def getSampleRate(filehandle, nFrames=None):
+def getSampleRate(filehandle, nFrames=None, FilterCode=False):
 	"""
-	Find out what the sampling rate is from a single observations.  The rate 
-	in Hz is returned.
+	Find out what the sampling rate/filter code is from a single observations.  
+	By default, the rate in Hz is returned.  However, the corresponding filter 
+	code can be returned instead by setting the FilterCode keyword to true.
 	
 	This function is included to make easier to write code for DRX analysis and 
 	modify it for USRP data.
@@ -401,13 +448,17 @@ def getSampleRate(filehandle, nFrames=None):
 	# Return to the place in the file where we started
 	filehandle.seek(fhStart)
 	
-	return newFrame.getSampleRate()
+	if not FilterCode:
+		return newFrame.getSampleRate()
+	else:
+		return newFrame.getFilterCode()
 
 
 def getFrameSize(filehandle, nFrames=None):
 	"""
 	Find out what the frame size is in bytes from a single observation.
 	"""
+	
 	# Save the current position in the file so we can return to that point
 	fhStart = filehandle.tell()
 
@@ -418,4 +469,32 @@ def getFrameSize(filehandle, nFrames=None):
 	filehandle.seek(fhStart)
 	
 	return newFrame.header.size + newFrame.data.size
+
+
+def getBeamCount(filehandle):
+	"""
+	Find out how many beams are present and return the number of beams found.
 	
+	This function is included to make easier to write code for DRX analysis 
+	and modify it for USRP data.
+	
+	.. note::
+		This function always returns 1.
+	"""
+	
+	return 1
+
+
+def getFramesPerObs(filehandle):
+	"""
+	Find out how many frames are present per beam and return the number of 
+	frames per observations as a four-element tuple, one for each beam.
+	
+	This function is included to make easier to write code for DRX analysis 
+	and modify it for USRP data.
+	
+	..note::
+		This function always returns the four-element tuple of (1, 0, 0, 0).
+	"""
+	
+	return (1, 0, 0, 0)

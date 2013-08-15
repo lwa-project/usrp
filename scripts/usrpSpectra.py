@@ -140,11 +140,11 @@ def main(args):
 	t0 = junkFrame.getTime()
 	fh.seek(-usrp.FrameSize, 1)
 	
-	beams = 1
-	tunepols = (1, 0, 0, 0)
-	tunepol = 1
+	beams = usrp.getBeamCount(fh)
+	tunepols = usrp.getFramesPerObs(fh)
+	tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
 	beampols = tunepol
-
+	
 	# Offset in frames for beampols beam/tuning/pol. sets
 	offset = int(config['offset'] * srate / junkFrame.data.iq.size * beampols)
 	offset = int(1.0 * offset / beampols) * beampols
@@ -159,9 +159,9 @@ def main(args):
 		junkFrame = usrp.readFrame(fh)
 		srate = junkFrame.getSampleRate()
 		t1 = junkFrame.getTime()
-		tunepols = (1, 0, 0, 0)
-		tunepol = 1
-		beampols = 1
+		tunepols = usrp.getFramesPerObs(fh)
+		tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
+		beampols = tunepol
 		fh.seek(-usrp.FrameSize, 1)
 		
 		## See how far off the current frame is from the target
@@ -253,9 +253,7 @@ def main(args):
 			except IOError:
 				break
 				
-			beam = 1
-			tune = 1
-			pol = cFrame.parseID()
+			beam, tune, pol = cFrame.parseID()
 			aStand = 2*(tune - 1) + pol
 			if aStand not in standMapper:
 				standMapper.append(aStand)
