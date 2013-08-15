@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Given a DRX file, plot the time averaged spectra for each beam output over some 
+Given a USRP file, plot the time averaged spectra for each beam output over some 
 period.
 
 $Rev$
@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 
 def usage(exitCode=None):
-	print """usrpWaterfall.py - Read in DRX files and create a collection of 
+	print """usrpWaterfall.py - Read in USRP files and create a collection of 
 time-averaged spectra.  These spectra are saved to a NPZ file called <filename>-waterfall.npz.
 
 Usage: usrpWaterfall.py [OPTIONS] file

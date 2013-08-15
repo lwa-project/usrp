@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Run through a DRX file and determine if it is bad or not.
+Run through a USRP file and determine if it is bad or not.
 
 $Rev$
 $LastChangedBy$
