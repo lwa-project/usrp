@@ -1,0 +1,5 @@
+0.1.1
+  * Added a DC bias correction to the included scripts that compute spectra
+
+0.1.0
+  * Initial version

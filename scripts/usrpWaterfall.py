@@ -369,7 +369,11 @@ def main(args):
 			
 			data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
 			count[aStand] +=  1
-
+			
+		# Correct the DC bias
+		for j in xrange(data.shape[0]):
+			data[j,:] -= data[j,:].mean()
+			
 		# Calculate the spectra for this block of data and then weight the results by 
 		# the total number of frames read.  This is needed to keep the averages correct.
 		freq, tempSpec1 = fxc.SpecMaster(data[:2,:], LFFT=LFFT, window=config['window'], verbose=config['verbose'], SampleRate=srate, ClipLevel=clip1)

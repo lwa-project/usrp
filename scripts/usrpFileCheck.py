@@ -30,7 +30,7 @@ Options:
 -s, --skip         Skip period in seconds between chunks (default 900 s)
 -t, --trim-level   Trim level for power analysis with clipping (default 32768^2)
 """
-
+	
 	if exitCode is not None:
 		sys.exit(exitCode)
 	else:
