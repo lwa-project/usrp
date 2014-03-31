@@ -14,7 +14,7 @@ except ImportError:
 
 setup(
   name                 = "USRP",
-  version              = "0.2.0",
+  version              = "0.2.1",
   description          = "Python reader for GNURadio/USRP data",
   url                  = "http://fornax.phys.unm.edu/lwa/trac/", 
   author               = "Jayce Dowell",

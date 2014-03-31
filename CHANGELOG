@@ -1,5 +1,10 @@
-0.1.1
+0.2.1
+  * Added in a hdfWaterfall.py-like script for USRP data named usrpHDFWaterfall.py
+  * Added the DC bias correction to usrpWaterfall.py
+
+0.2.0
   * Added a DC bias correction to the included scripts that compute spectra
+  * Switch over to a setuptools-based build system
 
 0.1.0
   * Initial version

@@ -147,10 +147,10 @@ def bestFreqUnits(freq):
 def main(args):
 	# Parse command line options
 	config = parseOptions(args)
-
+	
 	# Length of the FFT
 	LFFT = config['LFFT']
-
+	
 	fh = open(config['args'][0], "rb")
 	usrp.FrameSize = usrp.getFrameSize(fh)
 	nFramesFile = os.path.getsize(config['args'][0]) / usrp.FrameSize
@@ -164,7 +164,7 @@ def main(args):
 	tunepols = usrp.getFramesPerObs(fh)
 	tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
 	beampols = tunepol
-
+	
 	# Offset in frames for beampols beam/tuning/pol. sets
 	offset = int(config['offset'] * srate / junkFrame.data.iq.size * beampols)
 	offset = int(1.0 * offset / beampols) * beampols
@@ -198,24 +198,24 @@ def main(args):
 		if cOffset is 0:
 			break
 		fh.seek(cOffset*usrp.FrameSize, 1)
-	
+		
 	# Update the offset actually used
 	config['offset'] = t1 - t0
 	offset = int(round(config['offset'] * srate / junkFrame.data.iq.size * beampols))
 	offset = int(1.0 * offset / beampols) * beampols
-
+	
 	# Make sure that the file chunk size contains is an integer multiple
 	# of the FFT length so that no data gets dropped.  This needs to
 	# take into account the number of beampols in the data, the FFT length,
 	# and the number of samples per frame.
 	maxFrames = int(1.0*config['maxFrames']/beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
-
+	
 	# Number of frames to integrate over
 	nFramesAvg = int(config['average'] * srate / junkFrame.data.iq.size * beampols)
 	nFramesAvg = int(1.0 * nFramesAvg / beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
 	config['average'] = 1.0 * nFramesAvg / beampols * junkFrame.data.iq.size / srate
 	maxFrames = nFramesAvg
-
+	
 	# Number of remaining chunks (and the correction to the number of
 	# frames to read in).
 	nChunks = int(round(config['duration'] / config['average']))
@@ -248,7 +248,7 @@ def main(args):
 	
 	config['freq1'] = centralFreq1
 	config['freq2'] = centralFreq2
-
+	
 	# File summary
 	print "Filename: %s" % config['args'][0]
 	print "Date of First Frame: %s" % str(beginDate)
@@ -262,11 +262,11 @@ def main(args):
 	print "Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFramesAvg, nFramesAvg / beampols)
 	print "Duration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average']*nChunks, nFrames, nFrames / beampols)
 	print "Chunks: %i" % nChunks
-
+	
 	# Sanity check
 	if nFrames > (nFramesFile - offset):
 		raise RuntimeError("Requested integration time+offset is greater than file length")
-	
+		
 	# Estimate clip level (if needed)
 	if config['estimate']:
 		filePos = fh.tell()
@@ -291,6 +291,10 @@ def main(args):
 		# Go back to where we started
 		fh.seek(filePos)
 		
+		# Correct the DC bias
+		for j in xrange(data.shape[0]):
+			data[j,:] -= data[j,:].mean()
+			
 		# Compute the robust mean and standard deviation for I and Q for each
 		# tuning/polarization
 		meanI = []
@@ -303,13 +307,13 @@ def main(args):
 			
 			stdsI.append( robust.std(data[i,:].real) )
 			stdsQ.append( robust.std(data[i,:].imag) )
-		
+			
 		# Report
 		print "Statistics:"
 		for i in xrange(4):
 			print " Mean %i: %.3f + %.3f j" % (i+1, meanI[i], meanQ[i])
 			print " Std  %i: %.3f + %.3f j" % (i+1, stdsI[i], stdsQ[i])
-		
+			
 		# Come up with the clip levels based on 4 sigma
 		clip1 = (meanI[0] + meanI[1] + meanQ[0] + meanQ[1]) / 4.0
 		clip2 = (meanI[2] + meanI[3] + meanQ[2] + meanQ[3]) / 4.0
@@ -328,7 +332,7 @@ def main(args):
 	else:
 		clip1 = config['clip']
 		clip2 = config['clip']
-
+		
 	# Master loop over all of the file chunks
 	masterWeight = numpy.zeros((nChunks, 4, LFFT-1 if float(fxc.__version__) < 0.8 else LFFT))
 	masterSpectra = numpy.zeros((nChunks, 4, LFFT-1 if float(fxc.__version__) < 0.8 else LFFT))
@@ -349,10 +353,10 @@ def main(args):
 		# If there are fewer frames than we need to fill an FFT, skip this chunk
 		if data.shape[1] < LFFT:
 			break
-
+			
 		# Inner loop that actually reads the frames into the data array
 		print "Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0)
-
+		
 		for j in xrange(framesWork):
 			# Read in the next frame and anticipate any problems that could occur
 			try:
@@ -361,12 +365,12 @@ def main(args):
 				break
 			except errors.syncError:
 				continue
-
+				
 			beam,tune,pol = cFrame.parseID()
 			aStand = 2*(tune-1) + pol
 			if j is 0:
 				cTime = cFrame.getTime()
-			
+				
 			data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
 			count[aStand] +=  1
 			
@@ -392,10 +396,10 @@ def main(args):
 		masterWeight[i,1,:] = int(count[1] * cFrame.data.iq.size / LFFT)
 		masterWeight[i,2,:] = int(count[2] * cFrame.data.iq.size / LFFT)
 		masterWeight[i,3,:] = int(count[3] * cFrame.data.iq.size / LFFT)
-
+		
 		# We don't really need the data array anymore, so delete it
 		del(data)
-
+		
 	# Now that we have read through all of the chunks, perform the final averaging by
 	# dividing by all of the chunks
 	outname = os.path.split(config['args'][0])[1]
@@ -403,7 +407,7 @@ def main(args):
 	outname = '%s-waterfall.npz' % outname
 	numpy.savez(outname, freq=freq, freq1=freq+config['freq1'], freq2=freq+config['freq2'], times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.data.iq.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
 	spec = numpy.squeeze( (masterWeight*masterSpectra).sum(axis=0) / masterWeight.sum(axis=0) )
-
+	
 	# The plots:  This is setup for the current configuration of 20 beampols
 	fig = plt.figure()
 	figsX = int(round(math.sqrt(1)))
@@ -411,7 +415,7 @@ def main(args):
 	
 	# Put the frequencies in the best units possible
 	freq, units = bestFreqUnits(freq)
-
+	
 	for i in xrange(1):
 		ax = fig.add_subplot(figsX,figsY,i+1)
 		currSpectra = numpy.squeeze( numpy.log10(masterSpectra[:,i,:])*10.0 )
@@ -419,17 +423,17 @@ def main(args):
 		
 		ax.imshow(currSpectra, interpolation='nearest', extent=(freq.min(), freq.max(), config['offset']+0, config['offset']+config['average']*nChunks), origin='lower')
 		print currSpectra.min(), currSpectra.max()
-
+		
 		ax.axis('auto')
 		ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i/2+1, i%2))
 		ax.set_xlabel('Frequency Offset [%s]' % units)
 		ax.set_ylabel('Time [s]')
 		ax.set_xlim([freq.min(), freq.max()])
-
+		
 	print "RBW: %.4f %s" % ((freq[1]-freq[0]), units)
 	if config['verbose']:
 		plt.show()
-
+		
 	# Save spectra image if requested
 	if config['output'] is not None:
 		fig.savefig(config['output'])
