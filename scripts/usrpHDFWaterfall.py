@@ -480,6 +480,7 @@ def processDataBatchLinear(fh, dataProducts, tStart, duration, sampleRate, confi
 				
 			beam,tune,pol = cFrame.parseID()
 			aStand = 2*(tune-1) + pol
+			print pol
 			if j is 0:
 				cTime = cFrame.getTime()
 				
@@ -684,7 +685,7 @@ def main(args):
 		for t in (1,2):
 			createDataSets(f, o, t, numpy.arange(LFFT-1 if float(fxc.__version__) < 0.8 else LFFT, dtype=numpy.float32), int(round(obsList[o][2]/config['average'])), dataProducts)
 			
-	f.attrs['FileGenerator'] = 'hdfWaterfall.py'
+	f.attrs['FileGenerator'] = 'usrpHDFWaterfall.py'
 	f.attrs['InputData'] = os.path.basename(filename)
 	
 	# Create the various HDF group holders

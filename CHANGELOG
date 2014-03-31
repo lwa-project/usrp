@@ -1,3 +1,7 @@
+0.2.2
+  * Added scripts to help combine XX and YY files together so that a single file stores both polarizations
+  * Updated the metadata information in usrpHDFWaterfall.py
+
 0.2.1
   * Added in a hdfWaterfall.py-like script for USRP data named usrpHDFWaterfall.py
   * Added the DC bias correction to usrpWaterfall.py
