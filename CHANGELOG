@@ -1,3 +1,6 @@
+0.2.3
+  * Worked on making the module PEP8 compliant
+
 0.2.2
   * Added scripts to help combine XX and YY files together so that a single file stores both polarizations
   * Updated the metadata information in usrpHDFWaterfall.py

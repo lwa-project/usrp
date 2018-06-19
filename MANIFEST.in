@@ -1,4 +1,4 @@
-include README
+include README.md
 include CHANGELOG
 recursive-include lsl_toolkits *
 recursive-include scripts *
