@@ -13,7 +13,7 @@ setup(
     name                 = "lsl-toolkits-usrp",
     version              = "0.2.3",
     description          = "LSL Toolkit for URSP Data", 
-    long_description     = "Python reader for GNURadio/USRP data", 
+    long_description     = "LWA Software Library reader for GNURadio/USRP data", 
     url                  = "https://fornax.phys.unm.edu/lwa/trac/", 
     author               = "Jayce Dowell",
     author_email         = "jdowell@unm.edu",
