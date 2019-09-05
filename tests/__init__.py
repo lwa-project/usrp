@@ -14,5 +14,5 @@ __revision__  = "$Rev$"
 __version__   = "0.2"
 __author__    = "Jayce Dowell"
 
-import test_usrp
-import test_scripts
+from . import test_usrp
+from . import test_scripts
