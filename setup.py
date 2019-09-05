@@ -39,5 +39,5 @@ setup(
     install_requires     = ['numpy>=1.2'],
     include_package_data = True,  
     zip_safe             = False,  
-    test_suite           = "tests.test_usrp.usrp_tests"
+    test_suite           = "tests"
 )
