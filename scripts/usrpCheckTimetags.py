@@ -9,6 +9,12 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import ephem
@@ -44,12 +50,12 @@ def main(args):
     fh.seek(int(skip*sampleRate/junkFrame.data.iq.size)*usrp.FrameSize)
     
     # Report on the file
-    print "Filename: %s" % os.path.basename(args[0])
-    print "Date of first frame: %i -> %s" % (prevTime, str(prevDate))
-    print "Sample rate: %i Hz" % sampleRate
-    print "Time tag skip per frame: %i" % tagSkip
+    print("Filename: %s" % os.path.basename(args[0]))
+    print("Date of first frame: %i -> %s" % (prevTime, str(prevDate)))
+    print("Sample rate: %i Hz" % sampleRate)
+    print("Time tag skip per frame: %i" % tagSkip)
     if skip != 0:
-        print "Skipping ahead %i frames (%.6f seconds)" % (int(skip*sampleRate/junkFrame.data.iq.size), int(skip*sampleRate/junkFrame.data.iq.size)*junkFrame.data.iq.size/sampleRate)
+        print("Skipping ahead %i frames (%.6f seconds)" % (int(skip*sampleRate/junkFrame.data.iq.size), int(skip*sampleRate/junkFrame.data.iq.size)*junkFrame.data.iq.size/sampleRate))
         
     k = 0
     #k = 1
@@ -82,18 +88,18 @@ def main(args):
         #currNumb = k
         
         if tune == 1 and pol == 0 and currNumb % 50000 == 0:
-            print "Beam %i, tune %i, pol %i: frame %8i -> %i (%s)" % (beam, tune, pol, currNumb, currTime, currDate)
+            print("Beam %i, tune %i, pol %i: frame %8i -> %i (%s)" % (beam, tune, pol, currNumb, currTime, currDate))
             
         if currTime < prevTime[rID]:
-            print "ERROR: t.t. %i @ frame %i < t.t. %i @ frame %i" % (currTime, currNumb, prevTime[rID], prevNumb[rID])
-            print "       -> difference: %i (%.5f seconds); %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate))
+            print("ERROR: t.t. %i @ frame %i < t.t. %i @ frame %i" % (currTime, currNumb, prevTime[rID], prevNumb[rID]))
+            print("       -> difference: %i (%.5f seconds); %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate)))
         elif currTime > (prevTime[rID] + tagSkip):
-            print "ERROR: t.t. %i @ frame %i > t.t. %i @ frame %i + skip" % (currTime, currNumb, prevTime[rID], prevNumb[rID])
-            print "       -> difference: %i (%.5f seconds); %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate))
+            print("ERROR: t.t. %i @ frame %i > t.t. %i @ frame %i + skip" % (currTime, currNumb, prevTime[rID], prevNumb[rID]))
+            print("       -> difference: %i (%.5f seconds); %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate)))
         elif currTime < (prevTime[rID] + tagSkip):
-            print "ERROR: t.t %i @ frame %i < t.t. %i @ frame %i + skip" % (currTime, currNumb, prevTime[rID], prevNumb[rID])
-            print "       -> difference: %i (%.5f seconds; %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate))
-            print "       -> beam %i tune %i pol %i" % (beam, tune, pol)
+            print("ERROR: t.t %i @ frame %i < t.t. %i @ frame %i + skip" % (currTime, currNumb, prevTime[rID], prevNumb[rID]))
+            print("       -> difference: %i (%.5f seconds; %s" % (currTime-prevTime[rID], float(currTime-prevTime[rID])/fS, str(currDate)))
+            print("       -> beam %i tune %i pol %i" % (beam, tune, pol))
         else:
             pass
             

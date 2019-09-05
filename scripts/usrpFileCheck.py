@@ -9,6 +9,12 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import ephem
@@ -20,7 +26,7 @@ from lsl_toolkits import USRP as usrp
 
 
 def usage(exitCode=None):
-    print """usrpFileCheck.py - Run through a USRP file and determine if it is bad or not.
+    print("""usrpFileCheck.py - Run through a USRP file and determine if it is bad or not.
 
 Usage: usrpFileCheck.py [OPTIONS] filename
 
@@ -29,7 +35,7 @@ Options:
 -l, --length       Length of time in seconds to analyze (default 1 s)
 -s, --skip         Skip period in seconds between chunks (default 900 s)
 -t, --trim-level   Trim level for power analysis with clipping (default 32768^2)
-"""
+""")
     
     if exitCode is not None:
         sys.exit(exitCode)
@@ -47,7 +53,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hl:s:t:", ["help", "length=", "skip=", "trim-level="])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
 
     # Work through opts
@@ -100,13 +106,13 @@ def main(args):
     fh.seek(-tunepols*usrp.FrameSize, 1)
     
     # Report on the file
-    print "Filename: %s" % filename
-    print "Date of First Frame: %s" % str(beginDate)
-    print "Beam: %i" % beam
-    print "Tune/Pols: %i" % tunepols
-    print "Sample Rate: %i Hz" % srate
-    print "Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2)
-    print " "
+    print("Filename: %s" % filename)
+    print("Date of First Frame: %s" % str(beginDate))
+    print("Beam: %i" % beam)
+    print("Tune/Pols: %i" % tunepols)
+    print("Sample Rate: %i Hz" % srate)
+    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2))
+    print(" ")
     
     # Convert chunk length to total frame count
     chunkLength = int(config['length'] * srate / junkFrame.data.iq.size * tunepols)
@@ -123,9 +129,9 @@ def main(args):
     # Go!
     i = 1
     done = False
-    print "   |        Clipping         |          Power          |"
-    print "   |                         |                         |"
-    print "---+-------------------------+-------------------------+"
+    print("   |        Clipping         |          Power          |")
+    print("   |                         |                         |")
+    print("---+-------------------------+-------------------------+")
     
     while True:
         count = {0:0, 1:0, 2:0, 3:0}
@@ -164,7 +170,7 @@ def main(args):
             
             clip = clipFraction[-1]
             power = meanPower[-1]
-            print "%2i | %23.2f | %23.2f |" % (i, clip[0]*100.0, power[0])
+            print("%2i | %23.2f | %23.2f |" % (i, clip[0]*100.0, power[0]))
         
             i += 1
             fh.seek(usrp.FrameSize*chunkSkip, 1)
@@ -175,8 +181,8 @@ def main(args):
     clip = clipFraction.mean(axis=0)
     power = meanPower.mean(axis=0)
     
-    print "---+-------------------------+-------------------------+"
-    print "%2s | %23.2f | %23.2f |" % ('M', clip[0]*100.0, power[0])
+    print("---+-------------------------+-------------------------+")
+    print("%2s | %23.2f | %23.2f |" % ('M', clip[0]*100.0, power[0]))
 
 
 if __name__ == "__main__":

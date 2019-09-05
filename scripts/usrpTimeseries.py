@@ -9,6 +9,12 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import math
@@ -23,7 +29,7 @@ import matplotlib.pyplot as plt
 
 
 def usage(exitCode=None):
-    print """usrpTimeseries.py - Read in USRP files and create a collection of 
+    print("""usrpTimeseries.py - Read in USRP files and create a collection of 
 timeseries (I/Q) plots.
 
 Usage: usrpTimeseries.py [OPTIONS] file
@@ -38,7 +44,7 @@ Options:
 -m, --mark-frames           Mark the frame bounaries in time
 -q, --quiet                 Run usrpTimeseries in silent mode
 -o, --output                Output file name for time series image
-"""
+""")
 
     if exitCode is not None:
         sys.exit(exitCode)
@@ -63,7 +69,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hqo:s:p:im", ["help", "quiet", "output=", "skip=", "plot-range=", "instantaneous-power", "mark-frames"])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
     
     # Work through opts
@@ -166,15 +172,15 @@ def main(args):
     nChunks = int(math.ceil(1.0*(nFrames)/maxFrames))
 
     # File summary
-    print "Filename: %s" % config['args'][0]
-    print "Beams: %i" % beams
-    print "Tune/Pols: %i %i %i %i" % tunepols
-    print "Sample Rate: %i Hz" % srate
-    print "Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate)
-    print "---"
-    print "Offset: %.3f s (%i frames)" % (config['offset'], offset)
-    print "Plot time: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFrames, nFrames / beampols)
-    print "Chunks: %i" % nChunks
+    print("Filename: %s" % config['args'][0])
+    print("Beams: %i" % beams)
+    print("Tune/Pols: %i %i %i %i" % tunepols)
+    print("Sample Rate: %i Hz" % srate)
+    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
+    print("---")
+    print("Offset: %.3f s (%i frames)" % (config['offset'], offset))
+    print("Plot time: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFrames, nFrames / beampols))
+    print("Chunks: %i" % nChunks)
 
     # Sanity check
     if nFrames > (nFramesFile - offset):
@@ -200,14 +206,14 @@ def main(args):
             framesWork = maxFrames
         else:
             framesWork = framesRemaining
-        print "Working on chunk %i, %i frames remaining" % (i, framesRemaining)
+        print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
         tt = numpy.zeros((beampols,framesWork/beampols), dtype=numpy.int64) - 1
         data = numpy.zeros((beampols,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
         
         # Inner loop that actually reads the frames into the data array
-        print "Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0)
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
         t0 = time.time()
         
         for j in xrange(framesWork):
@@ -236,7 +242,7 @@ def main(args):
 
         samples = int(oldAverage * srate)
         if toClip:
-            print "Plotting only the first %i samples (%.3f ms) of data" % (samples, oldAverage*1000.0)
+            print("Plotting only the first %i samples (%.3f ms) of data" % (samples, oldAverage*1000.0))
             
         sortedMapper = sorted(standMapper)
         for i in xrange(data.shape[0]):

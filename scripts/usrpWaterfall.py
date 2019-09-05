@@ -10,6 +10,12 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import math
@@ -26,7 +32,7 @@ import matplotlib.pyplot as plt
 
 
 def usage(exitCode=None):
-    print """usrpWaterfall.py - Read in USRP files and create a collection of 
+    print("""usrpWaterfall.py - Read in USRP files and create a collection of 
 time-averaged spectra.  These spectra are saved to a NPZ file called <filename>-waterfall.npz.
 
 Usage: usrpWaterfall.py [OPTIONS] file
@@ -49,7 +55,7 @@ Options:
 -e, --estimate-clip         Use robust statistics to estimate an approprite clip 
                             level (overrides the `-c` option)
 -o, --output                Output file name for waterfall image
-"""
+""")
 
     if exitCode is not None:
         sys.exit(exitCode)
@@ -79,7 +85,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hqtbnl:o:s:a:d:c:e", ["help", "quiet", "bartlett", "blackman", "hanning", "fft-length=", "output=", "skip=", "average=", "duration=", "clip-level=", "estimate-clip"])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
     
     # Work through opts
@@ -250,18 +256,18 @@ def main(args):
     config['freq2'] = centralFreq2
     
     # File summary
-    print "Filename: %s" % config['args'][0]
-    print "Date of First Frame: %s" % str(beginDate)
-    print "Beams: %i" % beams
-    print "Tune/Pols: %i %i %i %i" % tunepols
-    print "Sample Rate: %i Hz" % srate
-    print "Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2)
-    print "Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate)
-    print "---"
-    print "Offset: %.3f s (%i frames)" % (config['offset'], offset)
-    print "Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFramesAvg, nFramesAvg / beampols)
-    print "Duration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average']*nChunks, nFrames, nFrames / beampols)
-    print "Chunks: %i" % nChunks
+    print("Filename: %s" % config['args'][0])
+    print("Date of First Frame: %s" % str(beginDate))
+    print("Beams: %i" % beams)
+    print("Tune/Pols: %i %i %i %i" % tunepols)
+    print("Sample Rate: %i Hz" % srate)
+    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2))
+    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
+    print("---")
+    print("Offset: %.3f s (%i frames)" % (config['offset'], offset))
+    print("Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFramesAvg, nFramesAvg / beampols))
+    print("Duration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average']*nChunks, nFrames, nFrames / beampols))
+    print("Chunks: %i" % nChunks)
     
     # Sanity check
     if nFrames > (nFramesFile - offset):
@@ -309,10 +315,10 @@ def main(args):
             stdsQ.append( robust.std(data[i,:].imag) )
             
         # Report
-        print "Statistics:"
+        print("Statistics:")
         for i in xrange(4):
-            print " Mean %i: %.3f + %.3f j" % (i+1, meanI[i], meanQ[i])
-            print " Std  %i: %.3f + %.3f j" % (i+1, stdsI[i], stdsQ[i])
+            print(" Mean %i: %.3f + %.3f j" % (i+1, meanI[i], meanQ[i]))
+            print(" Std  %i: %.3f + %.3f j" % (i+1, stdsI[i], stdsQ[i]))
             
         # Come up with the clip levels based on 4 sigma
         clip1 = (meanI[0] + meanI[1] + meanQ[0] + meanQ[1]) / 4.0
@@ -325,9 +331,9 @@ def main(args):
         clip2 = int(round(clip2))
         
         # Report again
-        print "Clip Levels:"
-        print " Tuning 1: %i" % clip1
-        print " Tuning 2: %i" % clip2
+        print("Clip Levels:")
+        print(" Tuning 1: %i" % clip1)
+        print(" Tuning 2: %i" % clip2)
         
     else:
         clip1 = config['clip']
@@ -346,7 +352,7 @@ def main(args):
             framesWork = maxFrames
         else:
             framesWork = framesRemaining
-        print "Working on chunk %i, %i frames remaining" % (i, framesRemaining)
+        print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
         data = numpy.zeros((4,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
@@ -355,7 +361,7 @@ def main(args):
             break
             
         # Inner loop that actually reads the frames into the data array
-        print "Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0)
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
         
         for j in xrange(framesWork):
             # Read in the next frame and anticipate any problems that could occur
@@ -422,7 +428,7 @@ def main(args):
         currSpectra = numpy.where( numpy.isfinite(currSpectra), currSpectra, -10)
         
         ax.imshow(currSpectra, interpolation='nearest', extent=(freq.min(), freq.max(), config['offset']+0, config['offset']+config['average']*nChunks), origin='lower')
-        print currSpectra.min(), currSpectra.max()
+        print(currSpectra.min(), currSpectra.max())
         
         ax.axis('auto')
         ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i/2+1, i%2))
@@ -430,7 +436,7 @@ def main(args):
         ax.set_ylabel('Time [s]')
         ax.set_xlim([freq.min(), freq.max()])
         
-    print "RBW: %.4f %s" % ((freq[1]-freq[0]), units)
+    print("RBW: %.4f %s" % ((freq[1]-freq[0]), units))
     if config['verbose']:
         plt.show()
         

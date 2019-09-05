@@ -30,6 +30,12 @@ getFramesPerObs
   are associated with each beam.
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import copy
 import numpy
 import struct
@@ -44,12 +50,12 @@ __all__ = ['FrameHeader', 'FrameData', 'Frame', 'readFrame',
 
 
 _type2name = {0: 'b', 
-            1: 'h', 
-            2: 'i', 
-            3: 'l', 
-            4: 'q', 
-            5: 'f', 
-            6: 'd'}
+              1: 'h', 
+              2: 'i', 
+              3: 'l', 
+              4: 'q', 
+              5: 'f', 
+              6: 'd'}
 
 
 # List of filter codes and their corresponding sample rates in Hz

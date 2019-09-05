@@ -9,6 +9,12 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import math
@@ -24,7 +30,7 @@ import matplotlib.pyplot as plt
 
 
 def usage(exitCode=None):
-    print """usrpSpectra.py - Read in USRP files and create a collection of 
+    print("""usrpSpectra.py - Read in USRP files and create a collection of 
 time-averaged spectra.
 
 Usage: usrpSpectra.py [OPTIONS] file
@@ -43,7 +49,7 @@ Options:
 -d, --disable-chunks        Display plotting chunks in addition to the global 
                             average
 -o, --output                Output file name for spectra image
-"""
+""")
     
     if exitCode is not None:
         sys.exit(exitCode)
@@ -69,7 +75,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hqtbnl:o:s:a:d", ["help", "quiet", "bartlett", "blackman", "hanning", "fft-length=", "output=", "skip=", "average=", "disable-chunks"])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
         
     # Work through opts
@@ -210,17 +216,17 @@ def main(args):
     fh.seek(-usrp.FrameSize, 1)
     
     # File summary
-    print "Filename: %s" % config['args'][0]
-    print "Date of First Frame: %s" % str(beginDate)
-    print "Beams: %i" % beams
-    print "Tune/Pols: %i %i %i %i" % tunepols
-    print "Sample Rate: %i Hz" % srate
-    print "Tuning Frequency: %.3f Hz" % centralFreq1
-    print "Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate)
-    print "---"
-    print "Offset: %.3f s (%i frames)" % (config['offset'], offset)
-    print "Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFrames, nFrames / beampols)
-    print "Chunks: %i" % nChunks
+    print("Filename: %s" % config['args'][0])
+    print("Date of First Frame: %s" % str(beginDate))
+    print("Beams: %i" % beams)
+    print("Tune/Pols: %i %i %i %i" % tunepols)
+    print("Sample Rate: %i Hz" % srate)
+    print("Tuning Frequency: %.3f Hz" % centralFreq1)
+    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
+    print("---")
+    print("Offset: %.3f s (%i frames)" % (config['offset'], offset))
+    print("Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFrames, nFrames / beampols))
+    print("Chunks: %i" % nChunks)
     
     # Sanity check
     if offset > nFramesFile:
@@ -241,7 +247,7 @@ def main(args):
             framesWork = maxFrames
         else:
             framesWork = framesRemaining
-        print "Working on chunk %i, %i frames remaining" % (i, framesRemaining)
+        print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {}
         data = numpy.zeros((beampols,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
@@ -250,7 +256,7 @@ def main(args):
             break
             
         # Inner loop that actually reads the frames into the data array
-        print "Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0)
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
         
         for j in range(framesWork):
             # Read in the next frame and anticipate any problems that could occur
@@ -265,7 +271,7 @@ def main(args):
                 standMapper.append(aStand)
                 oStand = 1*aStand
                 aStand = standMapper.index(aStand)
-                print "Mapping beam %i, tune. %1i, pol. %1i (%2i) to array index %3i" % (beam, tune, pol, oStand, aStand)
+                print("Mapping beam %i, tune. %1i, pol. %1i (%2i) to array index %3i" % (beam, tune, pol, oStand, aStand))
             else:
                 aStand = standMapper.index(aStand)
                 
@@ -315,7 +321,7 @@ def main(args):
             units = units2
             
         ax = fig.add_subplot(figsX,figsY,k+1)
-        print spec.shape
+        print(spec.shape)
         currSpectra = numpy.squeeze( numpy.log10(spec[i,:])*10.0 )
         ax.plot(freq, currSpectra, label='%i (avg)' % (i+1))
         
@@ -339,9 +345,9 @@ def main(args):
         ax.set_xlim([freq.min(), freq.max()])
         ax.legend(loc=0)
         
-        print "For beam %i, tune. %i, pol. %i maximum in PSD at %.3f %s" % (standMapper[i]/4+1, standMapper[i]%4/2+1, standMapper[i]%2, freq[numpy.where( spec[i,:] == spec[i,:].max() )][0], units)
+        print("For beam %i, tune. %i, pol. %i maximum in PSD at %.3f %s" % (standMapper[i]/4+1, standMapper[i]%4/2+1, standMapper[i]%2, freq[numpy.where( spec[i,:] == spec[i,:].max() )][0], units))
         
-    print "RBW: %.4f %s" % ((freq[1]-freq[0]), units)
+    print("RBW: %.4f %s" % ((freq[1]-freq[0]), units))
     plt.subplots_adjust(hspace=0.35, wspace=0.30)
     plt.show()
     

@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""Unit test for lsl_toolkit.S60 module"""
+"""
+Unit test for lsl_toolkit.USRP module.
+"""
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import unittest
 
