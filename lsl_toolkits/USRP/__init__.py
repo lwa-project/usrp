@@ -9,7 +9,7 @@ if sys.version_info > (3,):
 __version__ = '0.1'
 __revision__ = '$Rev$'
 
-from reader import *
+from .reader import *
 
 
 

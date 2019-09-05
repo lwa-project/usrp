@@ -40,7 +40,7 @@ import copy
 import numpy
 import struct
 
-from common import fS
+from .common import fS
 
 __version__ = '0.2'
 __revision__ = '$Rev$'
