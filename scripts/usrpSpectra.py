@@ -317,8 +317,8 @@ def main(args):
             freq = freq1
             units = units1
         else:
-            freq = freq2
-            units = units2
+            freq = freq1
+            units = units1
             
         ax = fig.add_subplot(figsX,figsY,k+1)
         print(spec.shape)

@@ -28,6 +28,7 @@ from datetime import datetime
 import lsl_toolkits.USRP as usrp
 import lsl.statistics.robust as robust
 import lsl.correlator.fx as fxc
+from lsl.reader import errors
 from lsl.astro import unix_to_utcjd, DJD_OFFSET
 from lsl.common import progress, stations
 from lsl.common import mcs, metabundle
@@ -285,6 +286,8 @@ def estimateClipLevel(fh, beampols):
     """
     
     filePos = fh.tell()
+    junkFrame = usrp.readFrame(fh, Verbose=False)
+    fh.seek(filePos)
     
     # Read in the first 100 frames for each tuning/polarization
     count = {0:0, 1:0, 2:0, 3:0}

@@ -26,6 +26,7 @@ import getopt
 import lsl_toolkits.USRP as usrp
 import lsl.statistics.robust as robust
 import lsl.correlator.fx as fxc
+from lsl.reader import errors
 from lsl.astro import unix_to_utcjd, DJD_OFFSET
 
 import matplotlib.pyplot as plt
