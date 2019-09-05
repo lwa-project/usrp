@@ -160,7 +160,7 @@ def main(args):
     
     fh = open(config['args'][0], "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(config['args'][0]) / usrp.FrameSize
+    nFramesFile = os.path.getsize(config['args'][0]) // usrp.FrameSize
     
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
@@ -356,7 +356,7 @@ def main(args):
         print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
-        data = numpy.zeros((4,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
+        data = numpy.zeros((4,framesWork*junkFrame.data.iq.size//beampols), dtype=numpy.csingle)
         # If there are fewer frames than we need to fill an FFT, skip this chunk
         if data.shape[1] < LFFT:
             break
@@ -418,7 +418,7 @@ def main(args):
     # The plots:  This is setup for the current configuration of 20 beampols
     fig = plt.figure()
     figsX = int(round(math.sqrt(1)))
-    figsY = 1 / figsX
+    figsY = 1 // figsX
     
     # Put the frequencies in the best units possible
     freq, units = bestFreqUnits(freq)
@@ -432,7 +432,7 @@ def main(args):
         print(currSpectra.min(), currSpectra.max())
         
         ax.axis('auto')
-        ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i/2+1, i%2))
+        ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i//2+1, i%2))
         ax.set_xlabel('Frequency Offset [%s]' % units)
         ax.set_ylabel('Time [s]')
         ax.set_xlim([freq.min(), freq.max()])

@@ -145,7 +145,7 @@ def main(args):
 
     fh = open(config['args'][0], "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(config['args'][0]) / usrp.FrameSize
+    nFramesFile = os.path.getsize(config['args'][0]) // usrp.FrameSize
     
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
@@ -256,7 +256,7 @@ def main(args):
             break
             
         # Inner loop that actually reads the frames into the data array
-        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size//beampols//srate)*1000.0))
         
         for j in range(framesWork):
             # Read in the next frame and anticipate any problems that could occur
@@ -306,14 +306,14 @@ def main(args):
     # The plots:  This is setup for the current configuration of 20 beampols
     fig = plt.figure()
     figsX = int(round(math.sqrt(beampols)))
-    figsY = beampols / figsX
+    figsY = beampols // figsX
     # Put the frequencies in the best units possible
     freq1, units1 = bestFreqUnits(freq1)
     
     sortedMapper = sorted(standMapper)
     for k, aStand in enumerate(sortedMapper):
         i = standMapper.index(aStand)
-        if standMapper[i]%4/2+1 == 1:
+        if standMapper[i]%4//2+1 == 1:
             freq = freq1
             units = units1
         else:
@@ -339,13 +339,13 @@ def main(args):
                 diff = subspectra - currSpectra
                 ax.plot(freq, diff, label='%i' % j)
                 
-        ax.set_title('Beam %i, Tune. %i, Pol. %i' % (standMapper[i]/4+1, standMapper[i]%4/2+1, standMapper[i]%2))
+        ax.set_title('Beam %i, Tune. %i, Pol. %i' % (standMapper[i]//4+1, standMapper[i]%4//2+1, standMapper[i]%2))
         ax.set_xlabel('Frequency [%s]' % units)
         ax.set_ylabel('P.S.D. [dB/RBW]')
         ax.set_xlim([freq.min(), freq.max()])
         ax.legend(loc=0)
         
-        print("For beam %i, tune. %i, pol. %i maximum in PSD at %.3f %s" % (standMapper[i]/4+1, standMapper[i]%4/2+1, standMapper[i]%2, freq[numpy.where( spec[i,:] == spec[i,:].max() )][0], units))
+        print("For beam %i, tune. %i, pol. %i maximum in PSD at %.3f %s" % (standMapper[i]//4+1, standMapper[i]%4//2+1, standMapper[i]%2, freq[numpy.where( spec[i,:] == spec[i,:].max() )][0], units))
         
     print("RBW: %.4f %s" % ((freq[1]-freq[0]), units))
     plt.subplots_adjust(hspace=0.35, wspace=0.30)

@@ -104,7 +104,7 @@ def main(args):
     
     fh = open(config['args'][0], "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(config['args'][0]) / usrp.FrameSize
+    nFramesFile = os.path.getsize(config['args'][0]) // usrp.FrameSize
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
     t0 = junkFrame.getTime()
@@ -209,8 +209,8 @@ def main(args):
         print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
-        tt = numpy.zeros((beampols,framesWork/beampols), dtype=numpy.int64) - 1
-        data = numpy.zeros((beampols,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
+        tt = numpy.zeros((beampols,framesWork//beampols), dtype=numpy.int64) - 1
+        data = numpy.zeros((beampols,framesWork*junkFrame.data.iq.size//beampols), dtype=numpy.csingle)
         
         # Inner loop that actually reads the frames into the data array
         print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
@@ -238,7 +238,7 @@ def main(args):
         # The plots:  This is setup for the current configuration of 20 beampols
         fig = plt.figure()
         figsX = int(round(math.sqrt(beampols)))
-        figsY = beampols / figsX
+        figsY = beampols // figsX
 
         samples = int(oldAverage * srate)
         if toClip:
@@ -268,7 +268,7 @@ def main(args):
                     ax.vlines(float(j)/srate, limits[0], limits[1], color='k', label='%i' % tt[i,j/cFrame.data.iq.size])
 
             ax.set_ylim(limits)
-            ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i/2+1,i%2))
+            ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i//2+1,i%2))
             ax.set_xlabel('Time [seconds]')
             if config['doPower']:
                 ax.set_ylabel('I$^2$ + Q$^2$')

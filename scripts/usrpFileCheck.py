@@ -82,7 +82,7 @@ def main(args):
     
     fh = open(filename, "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(filename) / usrp.FrameSize
+    nFramesFile = os.path.getsize(filename) // usrp.FrameSize
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
     fh.seek(-usrp.FrameSize, 1)

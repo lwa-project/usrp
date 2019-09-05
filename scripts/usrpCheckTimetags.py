@@ -69,7 +69,7 @@ def main(args):
         
         prevTime[rID] = currFrame.data.timeTag
         prevDate[rID] = ephem.Date(astro.unix_to_utcjd(currFrame.getTime()) - astro.DJD_OFFSET)
-        prevNumb[rID] = 1 + k / 1
+        prevNumb[rID] = 1 + k // 1
         #prevNumb[rID] = k
         
         k += 1
@@ -84,7 +84,7 @@ def main(args):
         rID = 2*(tune-1) + pol
         currTime = currFrame.data.timeTag
         currDate = ephem.Date(astro.unix_to_utcjd(currFrame.getTime()) - astro.DJD_OFFSET)
-        currNumb = 1 + k / 1
+        currNumb = 1 + k // 1
         #currNumb = k
         
         if tune == 1 and pol == 0 and currNumb % 50000 == 0:

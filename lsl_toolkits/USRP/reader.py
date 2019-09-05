@@ -417,15 +417,15 @@ def readFrame(filehandle, Verbose=False):
     # Data
     dataRaw = filehandle.read(header['bytes'])
     if header['cplx']:
-        dataRaw = struct.unpack('>%i%s' % (2*header['bytes']/header['size'], header['type']), dataRaw)
+        dataRaw = struct.unpack('>%i%s' % (2*header['bytes']//header['size'], header['type']), dataRaw)
         
-        data = numpy.zeros( header['bytes']/header['size'], dtype=numpy.complex64)
+        data = numpy.zeros( header['bytes']//header['size'], dtype=numpy.complex64)
         data.real = dataRaw[0::2]
         data.imag = dataRaw[1::2]
     else:
-        dataRaw = struct.unpack('>%i%s' % (header['bytes']/header['size'], header['type']), dataRaw)
+        dataRaw = struct.unpack('>%i%s' % (header['bytes']//header['size'], header['type']), dataRaw)
         
-        data = numpy.zeros( header['bytes']/header['size'], dtype=numpy.int32)
+        data = numpy.zeros( header['bytes']//header['size'], dtype=numpy.int32)
         data.real = dataRaw
         
     # Build the frame

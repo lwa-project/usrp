@@ -470,7 +470,7 @@ def processDataBatchLinear(fh, dataProducts, tStart, duration, sampleRate, confi
         print("Working on chunk %i, %i frames remaining" % (i+1, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
-        data = numpy.zeros((4,framesWork*junkFrame.data.iq.size/beampols), dtype=numpy.csingle)
+        data = numpy.zeros((4,framesWork*junkFrame.data.iq.size//beampols), dtype=numpy.csingle)
         # If there are fewer frames than we need to fill an FFT, skip this chunk
         if data.shape[1] < LFFT:
             break
@@ -550,7 +550,7 @@ def main(args):
     filename = config['args'][0]
     fh = open(filename, "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(filename) / usrp.FrameSize
+    nFramesFile = os.path.getsize(filename) // usrp.FrameSize
     
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
