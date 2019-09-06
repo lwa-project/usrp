@@ -23,7 +23,7 @@ import numpy
 import ephem
 import getopt
 
-import lsl_toolkits.USRP as usrp
+from lsl_toolkits import USRP as usrp
 import lsl.statistics.robust as robust
 import lsl.correlator.fx as fxc
 from lsl.reader import errors
@@ -238,17 +238,9 @@ def main(args):
         junkFrame = usrp.readFrame(fh)
         b,t,p = junkFrame.parseID()
         if p == 0 and t == 1:
-            try:
-                centralFreq1 = junkFrame.getCentralFreq()
-            except AttributeError:
-                from lsl.common.dp import fS
-                centralFreq1 = fS * ((junkFrame.data.flags>>32) & (2**32-1)) / 2**32
+            centralFreq1 = junkFrame.getCentralFreq()
         elif p == 0 and t == 2:
-            try:
-                centralFreq2 = junkFrame.getCentralFreq()
-            except AttributeError:
-                from lsl.common.dp import fS
-                centralFreq2 = fS * ((junkFrame.data.flags>>32) & (2**32-1)) / 2**32
+            centralFreq2 = junkFrame.getCentralFreq()
         else:
             pass
     fh.seek(-4*usrp.FrameSize, 1)
