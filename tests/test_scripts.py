@@ -69,7 +69,7 @@ def _test_generator(script):
             mtch = _LINT_RE.match(line)
             if mtch is not None:
                 line_no, type, info = mtch.group('line'), mtch.group('type'), mtch.group('info')
-                self.assertEqual(type.find('undefined'), -1, "%s:%s - %s" % (os.path.basename(script), line_no, info))
+                self.assertEqual(type, None, "%s:%s - %s" % (os.path.basename(script), line_no, info))
     return test
 
 
