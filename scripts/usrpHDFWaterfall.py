@@ -25,7 +25,7 @@ import ephem
 import getopt
 from datetime import datetime
 
-import lsl_toolkits.USRP as usrp
+from lsl_toolkits import USRP as usrp
 import lsl.statistics.robust as robust
 import lsl.correlator.fx as fxc
 from lsl.reader import errors

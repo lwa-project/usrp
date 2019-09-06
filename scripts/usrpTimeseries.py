@@ -20,91 +20,19 @@ import sys
 import math
 import time
 import numpy
-import getopt
+import argparse
 
 import lsl_toolkits.USRP as usrp
 import lsl.reader.errors as errors
+from lsl.misc import parser as aph
 
 import matplotlib.pyplot as plt
 
 
-def usage(exitCode=None):
-    print("""usrpTimeseries.py - Read in USRP files and create a collection of 
-timeseries (I/Q) plots.
-
-Usage: usrpTimeseries.py [OPTIONS] file
-
-Options:
--h, --help                  Display this help information
--s, --skip                  Skip the specified number of seconds at the beginning
-                            of the file (default = 0)
--p, --plot-range            Number of seconds of data to show in the I/Q plots
-                            (default = 0.01)
--i, --instantaneous-power   Plot I*I + Q*Q instead of the raw samples
--m, --mark-frames           Mark the frame bounaries in time
--q, --quiet                 Run usrpTimeseries in silent mode
--o, --output                Output file name for time series image
-""")
-
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    config = {}
-    # Command line flags - default values
-    config['offset'] = 0.0
-    config['average'] = 0.01
-    config['maxFrames'] = 19144
-    config['output'] = None
-    config['verbose'] = True
-    config['doPower'] = False
-    config['markFrames'] = False
-    config['args'] = []
-
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "hqo:s:p:im", ["help", "quiet", "output=", "skip=", "plot-range=", "instantaneous-power", "mark-frames"])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print(str(err)) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-    
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        elif opt in ('-q', '--quiet'):
-            config['verbose'] = False
-        elif opt in ('-o', '--output'):
-            config['output'] = value
-        elif opt in ('-s', '--skip'):
-            config['offset'] = float(value)
-        elif opt in ('-p', '--plot-range'):
-            config['average'] = float(value)
-        elif opt in ('-i', '--instantaneous-power'):
-            config['doPower'] = True
-        elif opt in ('-m', '--mark-frames'):
-            config['markFrames'] = True
-        else:
-            assert False
-    
-    # Add in arguments
-    config['args'] = args
-
-    # Return configuration
-    return config
-
-
 def main(args):
-    # Parse command line options
-    config = parseOptions(args)
-    
-    fh = open(config['args'][0], "rb")
+    fh = open(args.filename, "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(config['args'][0]) // usrp.FrameSize
+    nFramesFile = os.path.getsize(args.filename) // usrp.FrameSize
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
     t0 = junkFrame.getTime()
@@ -116,7 +44,7 @@ def main(args):
     beampols = tunepol
 
     # Offset in frames for beampols beam/tuning/pol. sets
-    offset = int(round(config['offset'] * srate / junkFrame.data.iq.size * beampols))
+    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
     fh.seek(offset*usrp.FrameSize, 1)
     
@@ -135,7 +63,7 @@ def main(args):
         fh.seek(-usrp.FrameSize, 1)
         
         ## See how far off the current frame is from the target
-        tDiff = t1 - (t0 + config['offset'])
+        tDiff = t1 - (t0 + args.skip)
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
@@ -150,36 +78,36 @@ def main(args):
         fh.seek(cOffset*usrp.FrameSize, 1)
     
     # Update the offset actually used
-    config['offset'] = t1 - t0
-    offset = int(round(config['offset'] * srate / junkFrame.data.iq.size * beampols))
+    args.skip = t1 - t0
+    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
 
     # Make sure that the file chunk size contains is an intger multiple
     # of the beampols.
-    maxFrames = int(config['maxFrames']/beampols)*beampols
+    maxFrames = int(19144/beampols)*beampols
 
     # Number of frames to integrate over
     toClip = False
-    oldAverage = config['average']
-    if config['average'] < junkFrame.data.iq.size/srate:		
+    oldAverage = args.plot_range
+    if args.plot_range < junkFrame.data.iq.size/srate:		
         toClip = True
-        config['average'] = junkFrame.data.iq.size/srate
-    nFrames = int(config['average'] * srate / junkFrame.data.iq.size * beampols)
+        args.plot_range = junkFrame.data.iq.size/srate
+    nFrames = int(args.plot_range * srate / junkFrame.data.iq.size * beampols)
     nFrames = int(1.0 * nFrames / beampols) * beampols
-    config['average'] = 1.0 * nFrames / beampols * junkFrame.data.iq.size / srate
+    args.plot_range = 1.0 * nFrames / beampols * junkFrame.data.iq.size / srate
 
     # Number of remaining chunks
     nChunks = int(math.ceil(1.0*(nFrames)/maxFrames))
 
     # File summary
-    print("Filename: %s" % config['args'][0])
+    print("Filename: %s" % args.filename)
     print("Beams: %i" % beams)
     print("Tune/Pols: %i %i %i %i" % tunepols)
     print("Sample Rate: %i Hz" % srate)
     print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
     print("---")
-    print("Offset: %.3f s (%i frames)" % (config['offset'], offset))
-    print("Plot time: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFrames, nFrames / beampols))
+    print("Offset: %.3f s (%i frames)" % (args.skip, offset))
+    print("Plot time: %.3f s (%i frames; %i frames per beam/tune/pol)" % (args.plot_range, nFrames, nFrames / beampols))
     print("Chunks: %i" % nChunks)
 
     # Sanity check
@@ -227,7 +155,7 @@ def main(args):
             aStand = 2*(tune-1) + pol
             
             tt[aStand, count[aStand]] = cFrame.data.timeTag
-            if config['doPower']:
+            if args.instantaneous_power:
                 data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = numpy.abs(cFrame.data.iq)**2
             else:
                 data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
@@ -247,39 +175,59 @@ def main(args):
         sortedMapper = sorted(standMapper)
         for i in xrange(data.shape[0]):
             ax = fig.add_subplot(figsX,figsY,i+1)
-            if config['doPower']:
+            if args.instantaneous_power:
                 limits = (-10, 70000)
                 if toClip:
-                    ax.plot(config['offset'] + numpy.arange(0,samples)/srate, data[i,0:samples])
+                    ax.plot(args.skip + numpy.arange(0,samples)/srate, data[i,0:samples])
                 else:
-                    ax.plot(config['offset'] + numpy.arange(0,data.shape[1])/srate, data[i,:])
+                    ax.plot(args.skip + numpy.arange(0,data.shape[1])/srate, data[i,:])
             else:
                 limits = (-32768, 32768)
                 if toClip:
-                    ax.plot(config['offset'] + numpy.arange(0,samples)/srate, data[i,0:samples].real, label='I')
-                    ax.plot(config['offset'] + numpy.arange(0,samples)/srate, data[i,0:samples].imag, label='Q')
+                    ax.plot(args.skip + numpy.arange(0,samples)/srate, data[i,0:samples].real, label='I')
+                    ax.plot(args.skip + numpy.arange(0,samples)/srate, data[i,0:samples].imag, label='Q')
                 else:
-                    ax.plot(config['offset'] + numpy.arange(0,data.shape[1])/srate, data[i,:].real, label='I')
-                    ax.plot(config['offset'] + numpy.arange(0,data.shape[1])/srate, data[i,:].imag, label='Q')
+                    ax.plot(args.skip + numpy.arange(0,data.shape[1])/srate, data[i,:].real, label='I')
+                    ax.plot(args.skip + numpy.arange(0,data.shape[1])/srate, data[i,:].imag, label='Q')
                 ax.legend(loc=0)
 
-            if config['markFrames']:
+            if args.mark_frames:
                 for j in xrange(0, samples-cFrame.data.iq.size, cFrame.data.iq.size):
                     ax.vlines(float(j)/srate, limits[0], limits[1], color='k', label='%i' % tt[i,j/cFrame.data.iq.size])
 
             ax.set_ylim(limits)
             ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i//2+1,i%2))
             ax.set_xlabel('Time [seconds]')
-            if config['doPower']:
+            if args.instantaneous_power:
                 ax.set_ylabel('I$^2$ + Q$^2$')
             else:
                 ax.set_ylabel('Output Level')
         plt.show()
 
         # Save image if requested
-        if config['output'] is not None:
-            fig.savefig(config['output'])
+        if args.output is not None:
+            fig.savefig(args.output)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description='read in USRP files and create a collection of timeseries (I/Q) plots', 
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('filename', type=str, 
+                        help='filename to plot')
+    parser.add_argument('-s', '--skip', type=aph.positive_float, default=0.0, 
+                        help='skip period in seconds between chunks')
+    parser.add_argument('-p', '--plot-range', type=aph.positive_float, default=0.01, 
+                        help='number of seconds of data to show in the I/Q plots')
+    parser.add_argument('-i', '--instantaneous-power', action='store_true', 
+                        help='plot I*I + Q*Q instead of the raw samples')
+    parser.add_argument('-m', '--mark-frames', action='store_true', 
+                        help='mark the frame bounaries in time')
+    parser.add_argument('-q', '--quiet', dest='verbose', action='store_false', 
+                        help='run %(prog)s in silent mode')
+    parser.add_argument('-o', '--output', type=str, 
+                        help='output file name for timeseries image')
+    args = parser.parse_args()
+    main(args)
+    

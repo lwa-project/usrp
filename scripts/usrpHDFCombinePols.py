@@ -19,6 +19,7 @@ if sys.version_info > (3,):
 import os
 import sys
 import h5py
+import argparse
 
 
 def _fillHDF(input1, input2, output):
@@ -78,12 +79,9 @@ def _fillHDF(input1, input2, output):
 
 
 def main(args):
-    # Sort and read in the data
-    filename1 = args[0]
-    filename2 = args[1]
-    
-    h1 = h5py.File(filename1)
-    h2 = h5py.File(filename2)
+    # Read in the data
+    h1 = h5py.File(args.pol0)
+    h2 = h5py.File(args.pol1)
     
     # Verify that the files are from the data data collection/processing batch
     i = 1
@@ -142,7 +140,7 @@ def main(args):
         i += 1
         
     # Output
-    filename = filename1.replace('_pol0', '_comb').replace('_pol1', '_comb')
+    filename = args.pol0.replace('_pol0', '_comb').replace('_pol1', '_comb')
     filename = os.path.basename(filename)
     hC = h5py.File(filename, mode='w')
     _fillHDF(h1, h2, hC)
@@ -158,5 +156,14 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
-
+    parser = argparse.ArgumentParser(
+        description='combine two USRP polarization HDF5 files into a single HDF5 file',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('pol0', type=str,
+                        help='first polarization')
+    parser.add_argument('pol1', type=str,
+                        help='second polarization')
+    args = parser.parse_args()
+    main(args)
+    
