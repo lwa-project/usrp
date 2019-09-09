@@ -21,108 +21,16 @@ import sys
 import math
 import numpy
 import ephem
-import getopt
+import argparse
 
 from lsl_toolkits import USRP as usrp
 import lsl.statistics.robust as robust
 import lsl.correlator.fx as fxc
 from lsl.reader import errors
 from lsl.astro import unix_to_utcjd, DJD_OFFSET
+from lsl.misc import parser as aph
 
 import matplotlib.pyplot as plt
-
-
-def usage(exitCode=None):
-    print("""usrpWaterfall.py - Read in USRP files and create a collection of 
-time-averaged spectra.  These spectra are saved to a NPZ file called <filename>-waterfall.npz.
-
-Usage: usrpWaterfall.py [OPTIONS] file
-
-Options:
--h, --help                  Display this help information
--t, --bartlett              Apply a Bartlett window to the data
--b, --blackman              Apply a Blackman window to the data
--n, --hanning               Apply a Hanning window to the data
--s, --skip                  Skip the specified number of seconds at the beginning
-                            of the file (default = 0)
--a, --average               Number of seconds of data to average for spectra 
-                            (default = 1)
--d, --duration              Number of seconds to calculate the waterfall for 
-                            (default = 10)
--q, --quiet                 Run usrpSpectra in silent mode and do not show the plots
--l, --fft-length            Set FFT length (default = 4096)
--c, --clip-level            FFT blanking clipping level in counts (default = 0, 
-                            0 disables)
--e, --estimate-clip         Use robust statistics to estimate an approprite clip 
-                            level (overrides the `-c` option)
--o, --output                Output file name for waterfall image
-""")
-
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    config = {}
-    # Command line flags - default values
-    config['offset'] = 0.0
-    config['average'] = 1.0
-    config['LFFT'] = 4096
-    config['freq1'] = 0
-    config['freq2'] = 0
-    config['maxFrames'] = 28000
-    config['window'] = fxc.noWindow
-    config['output'] = None
-    config['duration'] = 10.0
-    config['verbose'] = True
-    config['clip'] = 0
-    config['estimate'] = False
-    config['args'] = []
-
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "hqtbnl:o:s:a:d:c:e", ["help", "quiet", "bartlett", "blackman", "hanning", "fft-length=", "output=", "skip=", "average=", "duration=", "clip-level=", "estimate-clip"])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print(str(err)) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-    
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        elif opt in ('-q', '--quiet'):
-            config['verbose'] = False
-        elif opt in ('-t', '--bartlett'):
-            config['window'] = numpy.bartlett
-        elif opt in ('-b', '--blackman'):
-            config['window'] = numpy.blackman
-        elif opt in ('-n', '--hanning'):
-            config['window'] = numpy.hanning
-        elif opt in ('-l', '--fft-length'):
-            config['LFFT'] = int(value)
-        elif opt in ('-o', '--output'):
-            config['output'] = value
-        elif opt in ('-s', '--skip'):
-            config['offset'] = float(value)
-        elif opt in ('-a', '--average'):
-            config['average'] = float(value)
-        elif opt in ('-d', '--duration'):
-            config['duration'] = float(value)
-        elif opt in ('-c', '--clip-level'):
-            config['clip'] = int(value)
-        elif opt in ('-e', '--estimate-clip'):
-            config['estimate'] = True
-        else:
-            assert False
-    
-    # Add in arguments
-    config['args'] = args
-
-    # Return configuration
-    return config
 
 
 def bestFreqUnits(freq):
@@ -152,15 +60,21 @@ def bestFreqUnits(freq):
 
 
 def main(args):
-    # Parse command line options
-    config = parseOptions(args)
+    # Length of the FFT and the window to use
+    LFFT = args.fft_length
+    if args.bartlett:
+        window = numpy.bartlett
+    elif args.blackman:
+        window = numpy.blackman
+    elif args.hanning:
+        window = numpy.hanning
+    else:
+        window = fxc.noWindow
+    args.window = window
     
-    # Length of the FFT
-    LFFT = config['LFFT']
-    
-    fh = open(config['args'][0], "rb")
+    fh = open(args.filename, "rb")
     usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(config['args'][0]) // usrp.FrameSize
+    nFramesFile = os.path.getsize(args.filename) // usrp.FrameSize
     
     junkFrame = usrp.readFrame(fh)
     srate = junkFrame.getSampleRate()
@@ -173,7 +87,7 @@ def main(args):
     beampols = tunepol
     
     # Offset in frames for beampols beam/tuning/pol. sets
-    offset = int(config['offset'] * srate / junkFrame.data.iq.size * beampols)
+    offset = int(args.skip * srate / junkFrame.data.iq.size * beampols)
     offset = int(1.0 * offset / beampols) * beampols
     fh.seek(offset*usrp.FrameSize, 1)
     
@@ -192,7 +106,7 @@ def main(args):
         fh.seek(-usrp.FrameSize, 1)
         
         ## See how far off the current frame is from the target
-        tDiff = t1 - (t0 + config['offset'])
+        tDiff = t1 - (t0 + args.skip)
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
@@ -207,25 +121,25 @@ def main(args):
         fh.seek(cOffset*usrp.FrameSize, 1)
         
     # Update the offset actually used
-    config['offset'] = t1 - t0
-    offset = int(round(config['offset'] * srate / junkFrame.data.iq.size * beampols))
+    args.skip = t1 - t0
+    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
     
     # Make sure that the file chunk size contains is an integer multiple
     # of the FFT length so that no data gets dropped.  This needs to
     # take into account the number of beampols in the data, the FFT length,
     # and the number of samples per frame.
-    maxFrames = int(1.0*config['maxFrames']/beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
+    maxFrames = int(1.0*28000/beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
     
     # Number of frames to integrate over
-    nFramesAvg = int(config['average'] * srate / junkFrame.data.iq.size * beampols)
+    nFramesAvg = int(args.average * srate / junkFrame.data.iq.size * beampols)
     nFramesAvg = int(1.0 * nFramesAvg / beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
-    config['average'] = 1.0 * nFramesAvg / beampols * junkFrame.data.iq.size / srate
+    args.average = 1.0 * nFramesAvg / beampols * junkFrame.data.iq.size / srate
     maxFrames = nFramesAvg
     
     # Number of remaining chunks (and the correction to the number of
     # frames to read in).
-    nChunks = int(round(config['duration'] / config['average']))
+    nChunks = int(round(args.duration / args.average))
     if nChunks == 0:
         nChunks = 1
     nFrames = nFramesAvg*nChunks
@@ -245,11 +159,11 @@ def main(args):
             pass
     fh.seek(-4*usrp.FrameSize, 1)
     
-    config['freq1'] = centralFreq1
-    config['freq2'] = centralFreq2
+    centralFreq1 = centralFreq1
+    centralFreq2 = centralFreq2
     
     # File summary
-    print("Filename: %s" % config['args'][0])
+    print("Filename: %s" % args.filename)
     print("Date of First Frame: %s" % str(beginDate))
     print("Beams: %i" % beams)
     print("Tune/Pols: %i %i %i %i" % tunepols)
@@ -257,9 +171,9 @@ def main(args):
     print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2))
     print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
     print("---")
-    print("Offset: %.3f s (%i frames)" % (config['offset'], offset))
-    print("Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average'], nFramesAvg, nFramesAvg / beampols))
-    print("Duration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (config['average']*nChunks, nFrames, nFrames / beampols))
+    print("Offset: %.3f s (%i frames)" % (args.skip, offset))
+    print("Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (args.average, nFramesAvg, nFramesAvg / beampols))
+    print("Duration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (args.average*nChunks, nFrames, nFrames / beampols))
     print("Chunks: %i" % nChunks)
     
     # Sanity check
@@ -267,7 +181,7 @@ def main(args):
         raise RuntimeError("Requested integration time+offset is greater than file length")
         
     # Estimate clip level (if needed)
-    if config['estimate']:
+    if args.estimate_clip_level:
         filePos = fh.tell()
         
         # Read in the first 100 frames for each tuning/polarization
@@ -329,8 +243,8 @@ def main(args):
         print(" Tuning 2: %i" % clip2)
         
     else:
-        clip1 = config['clip']
-        clip2 = config['clip']
+        clip1 = args.clip_level
+        clip2 = args.clip_level
         
     # Master loop over all of the file chunks
     masterWeight = numpy.zeros((nChunks, 4, LFFT-1 if float(fxc.__version__) < 0.8 else LFFT))
@@ -379,9 +293,9 @@ def main(args):
             
         # Calculate the spectra for this block of data and then weight the results by 
         # the total number of frames read.  This is needed to keep the averages correct.
-        freq, tempSpec1 = fxc.SpecMaster(data[:2,:], LFFT=LFFT, window=config['window'], verbose=config['verbose'], SampleRate=srate, ClipLevel=clip1)
+        freq, tempSpec1 = fxc.SpecMaster(data[:2,:], LFFT=LFFT, window=args.window, verbose=True, SampleRate=srate, ClipLevel=clip1)
         
-        freq, tempSpec2 = fxc.SpecMaster(data[2:,:], LFFT=LFFT, window=config['window'], verbose=config['verbose'], SampleRate=srate, ClipLevel=clip2)
+        freq, tempSpec2 = fxc.SpecMaster(data[2:,:], LFFT=LFFT, window=args.window, verbose=True, SampleRate=srate, ClipLevel=clip2)
         
         # Save the results to the various master arrays
         masterTimes[i] = cTime
@@ -401,10 +315,10 @@ def main(args):
         
     # Now that we have read through all of the chunks, perform the final averaging by
     # dividing by all of the chunks
-    outname = os.path.split(config['args'][0])[1]
+    outname = os.path.split(args.filename)[1]
     outname = os.path.splitext(outname)[0]
     outname = '%s-waterfall.npz' % outname
-    numpy.savez(outname, freq=freq, freq1=freq+config['freq1'], freq2=freq+config['freq2'], times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.data.iq.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
+    numpy.savez(outname, freq=freq, freq1=freq+centralFreq1, freq2=freq+centralFreq2, times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.data.iq.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
     spec = numpy.squeeze( (masterWeight*masterSpectra).sum(axis=0) / masterWeight.sum(axis=0) )
     
     # The plots:  This is setup for the current configuration of 20 beampols
@@ -420,7 +334,7 @@ def main(args):
         currSpectra = numpy.squeeze( numpy.log10(masterSpectra[:,i,:])*10.0 )
         currSpectra = numpy.where( numpy.isfinite(currSpectra), currSpectra, -10)
         
-        ax.imshow(currSpectra, interpolation='nearest', extent=(freq.min(), freq.max(), config['offset']+0, config['offset']+config['average']*nChunks), origin='lower')
+        ax.imshow(currSpectra, interpolation='nearest', extent=(freq.min(), freq.max(), args.skip+0, args.skip+args.average*nChunks), origin='lower')
         print(currSpectra.min(), currSpectra.max())
         
         ax.axis('auto')
@@ -430,13 +344,44 @@ def main(args):
         ax.set_xlim([freq.min(), freq.max()])
         
     print("RBW: %.4f %s" % ((freq[1]-freq[0]), units))
-    if config['verbose']:
+    if True:
         plt.show()
         
     # Save spectra image if requested
-    if config['output'] is not None:
-        fig.savefig(config['output'])
+    if args.output is not None:
+        fig.savefig(args.output)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+            description='read in USRP files and create a collection of time-averaged spectra stored as an HDF5 file called <args.filename>-waterfall.hdf5',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            )
+    parser.add_argument('args.filename', type=str, 
+                        help='args.filename to process')
+    wgroup = parser.add_mutually_exclusive_group(required=False)
+    wgroup.add_argument('-t', '--bartlett', action='store_true', 
+                        help='apply a Bartlett window to the data')
+    wgroup.add_argument('-b', '--blackman', action='store_true', 
+                        help='apply a Blackman window to the data')
+    wgroup.add_argument('-n', '--hanning', action='store_true', 
+                        help='apply a Hanning window to the data')
+    parser.add_argument('-s', '--skip', type=aph.positive_or_zero_float, default=0.0, 
+                        help='skip the specified number of seconds at the beginning of the file')
+    parser.add_argument('-a', '--average', type=aph.positive_float, default=1.0, 
+                        help='number of seconds of data to average for spectra')
+    parser.add_argument('-d', '--duration', type=aph.positive_or_zero_float, default=0.0, 
+                        help='number of seconds to calculate the waterfall for; 0 for everything') 
+    parser.add_argument('-q', '--quiet', dest='verbose', action='store_false',
+                        help='run %(prog)s in silent mode')
+    parser.add_argument('-l', '--fft-length', type=aph.positive_int, default=4096, 
+                        help='set FFT length')
+    parser.add_argument('-c', '--clip-level', type=aph.positive_or_zero_int, default=0,  
+                        help='FFT blanking clipping level in counts; 0 disables')
+    parser.add_argument('-e', '--estimate-clip-level', action='store_true', 
+                        help='use robust statistics to estimate an appropriate clip level; overrides -c/--clip-level')
+    parser.add_argument('-o', '--output', type=str,
+                        help='output file name for the waterfall image')
+    args = parser.parse_args()
+    main(args)
+    
