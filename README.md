@@ -1,6 +1,10 @@
 LSL Toolkit for GNURadio/USRP Data
 ==================================
 
+[![Travis](https://travis-ci.org/lwa-project/usrp.svg?branch=master)](https://travis-ci.org/lwa-project/ursp.svg?branch=master)
+
+[![Coverage Status](https://coveralls.io/repos/github/lwa-project/usrp/badge.svg?branch=master)](https://coveralls.io/github/lwa-project/usrp?branch=master)
+
 DESCRIPTION
 -----------
 This package provides a reader for USRP data generated through GNURadio.
