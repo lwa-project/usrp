@@ -21,6 +21,8 @@ currentDir = os.path.abspath(os.getcwd())
 if os.path.exists(os.path.join(currentDir, 'setup.py')) and os.path.exists(os.path.join(currentDir, 'lsl_toolkits')):
     modInfoBuild = imp.find_module('lsl_toolkits', [currentDir])
     MODULE_BUILD = os.path.abspath(modInfoBuild[1])
+elif os.path.exists(os.path.join(currentDir, 'test_scripts.py')):
+    MODULE_BUILD = currentDir
 else:
     MODULE_BUILD = None
     
