@@ -231,7 +231,7 @@ def read_frame(filehandle, verbose=False):
         header[key] = out
         
     # Cleanup time
-    header[b'rx_time'] = (numpy.uint64(header['rx_time'][0]), numpy.float128(header['rx_time'][2]))
+    header[b'rx_time'] = (numpy.uint64(header[b'rx_time'][0]), numpy.float128(header[b'rx_time'][2]))
         
     # Extended header (optional)
     if header[b'strt'] != 149:
