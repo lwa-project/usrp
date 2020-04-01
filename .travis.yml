@@ -18,7 +18,6 @@ addons:
             - python3-dev
             - libfftw3-dev
             - libgdbm-dev
-            - libatlas-base-dev
 
 install:
     - pip install \
