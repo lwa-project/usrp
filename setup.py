@@ -36,7 +36,7 @@ setup(
     scripts              = glob.glob('scripts/*.py'), 
     python_requires      = '>=2.7', 
     setup_requires       = ['numpy>=1.2'], 
-    install_requires     = ['numpy>=1.2', 'lsl>=1.3'],
+    install_requires     = ['numpy>=1.2', 'lsl==1.3.dev0'],
     include_package_data = True,  
     zip_safe             = False,  
     test_suite           = "tests"
