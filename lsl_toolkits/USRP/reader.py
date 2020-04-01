@@ -101,7 +101,7 @@ class FrameHeader(FrameHeaderBase):
         for key,value in FILTER_CODES.iteritems():
             sampleCodes[value] = key
             
-        return sampleCodes[self.get_sample_rate()]
+        return sampleCodes[self.sample_rate]
 
 
 class FramePayload(FramePayloadBase):
@@ -205,7 +205,7 @@ def read_frame(filehandle, verbose=False):
     # Header
     header = {}
     rawHeader = filehandle.read(149)
-    for key,typ in zip(('strt', 'rx_rate', 'rx_time', 'bytes', 'type', 'cplx', 'version', 'size'), ('Q', 'd', 'Qbd', 'Q', 'i', '?', 'b', 'i')):
+    for key,typ in zip((b'strt', b'rx_rate', b'rx_time', b'bytes', b'type', b'cplx', b'version', b'size'), ('Q', 'd', 'Qbd', 'Q', 'i', '?', 'b', 'i')):
         start = rawHeader.find(key)
         stop = start + len(key) + 1
         tln = struct.calcsize(typ)
