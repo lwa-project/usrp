@@ -1,12 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Run through a USRP file and determine if it is bad or not.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 # Python3 compatibility
@@ -28,29 +23,29 @@ from lsl.misc import parser as aph
 
 def main(args):
     fh = open(args.filename, "rb")
-    usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(args.filename) // usrp.FrameSize
-    junkFrame = usrp.readFrame(fh)
-    srate = junkFrame.getSampleRate()
-    fh.seek(-usrp.FrameSize, 1)
+    usrp.FRAME_SIZE = usrp.get_frame_size(fh)
+    nFramesFile = os.path.getsize(args.filename) // usrp.FRAME_SIZE
+    junkFrame = usrp.read_frame(fh)
+    srate = junkFrame.sample_rate
+    fh.seek(-usrp.FRAME_SIZE, 1)
     
-    beam, tune, pol = junkFrame.parseID()
-    tunepols = max(usrp.getFramesPerObs(fh))
+    beam, tune, pol = junkFrame.id
+    tunepols = max(usrp.get_frames_per_obs(fh))
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(astro.unix_to_utcjd(junkFrame.getTime()) - astro.DJD_OFFSET)
-    centralFreq1 = 0.0
-    centralFreq2 = 0.0
+    beginDate = ephem.Date(astro.unix_to_utcjd(junkFrame.get_time()) - astro.DJD_OFFSET)
+    central_freq1 = 0.0
+    central_freq2 = 0.0
     for i in xrange(tunepols):
-        junkFrame = usrp.readFrame(fh)
-        b,t,p = junkFrame.parseID()
+        junkFrame = usrp.read_frame(fh)
+        b,t,p = junkFrame.id
         if p == 0 and t == 1:
-            centralFreq1 = junkFrame.getCentralFreq()
+            central_freq1 = junkFrame.central_freq
         elif p == 0 and t == 2:
-            centralFreq2 = junkFrame.getCentralFreq()
+            central_freq2 = junkFrame.central_freq
         else:
             pass
-    fh.seek(-tunepols*usrp.FrameSize, 1)
+    fh.seek(-tunepols*usrp.FRAME_SIZE, 1)
     
     # Report on the file
     print("Filename: %s" % args.filename)
@@ -58,15 +53,15 @@ def main(args):
     print("Beam: %i" % beam)
     print("Tune/Pols: %i" % tunepols)
     print("Sample Rate: %i Hz" % srate)
-    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2))
+    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (central_freq1, central_freq2))
     print(" ")
     
     # Convert chunk length to total frame count
-    chunkLength = int(args.length * srate / junkFrame.data.iq.size * tunepols)
+    chunkLength = int(args.length * srate / junkFrame.payload.data.size * tunepols)
     chunkLength = int(1.0 * chunkLength / tunepols) * tunepols
     
     # Convert chunk skip to total frame count
-    chunkSkip = int(args.skip * srate / junkFrame.data.iq.size * tunepols)
+    chunkSkip = int(args.skip * srate / junkFrame.payload.data.size * tunepols)
     chunkSkip = int(1.0 * chunkSkip / tunepols) * tunepols
     
     # Output arrays
@@ -82,20 +77,20 @@ def main(args):
     
     while True:
         count = {0:0, 1:0, 2:0, 3:0}
-        data = numpy.empty((4,chunkLength*junkFrame.data.iq.size/tunepols), dtype=numpy.csingle)
+        data = numpy.empty((4,chunkLength*junkFrame.payload.data.size/tunepols), dtype=numpy.csingle)
         for j in xrange(chunkLength):
             # Read in the next frame and anticipate any problems that could occur
             try:
-                cFrame = usrp.readFrame(fh, Verbose=False)
+                cFrame = usrp.read_frame(fh, Verbose=False)
             except:
                 done = True
                 break
                 
-            beam,tune,pol = cFrame.parseID()
+            beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             
             try:
-                data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
+                data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
                 
                 # Update the counters so that we can average properly later on
                 count[aStand] += 1
@@ -120,7 +115,7 @@ def main(args):
             print("%2i | %23.2f | %23.2f |" % (i, clip[0]*100.0, power[0]))
         
             i += 1
-            fh.seek(usrp.FrameSize*chunkSkip, 1)
+            fh.seek(usrp.FRAME_SIZE*chunkSkip, 1)
             
     clipFraction = numpy.array(clipFraction)
     meanPower = numpy.array(meanPower)

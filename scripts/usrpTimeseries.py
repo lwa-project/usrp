@@ -1,12 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Given a USRP file, plot the time series I and Q data as a function of time.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 # Python3 compatibility
@@ -31,22 +26,22 @@ import matplotlib.pyplot as plt
 
 def main(args):
     fh = open(args.filename, "rb")
-    usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(args.filename) // usrp.FrameSize
-    junkFrame = usrp.readFrame(fh)
-    srate = junkFrame.getSampleRate()
-    t0 = junkFrame.getTime()
-    fh.seek(-usrp.FrameSize, 1)
+    usrp.FRAME_SIZE = usrp.get_frame_size(fh)
+    nFramesFile = os.path.getsize(args.filename) // usrp.FRAME_SIZE
+    junkFrame = usrp.read_frame(fh)
+    srate = junkFrame.sample_rate
+    t0 = junkFrame.get_time()
+    fh.seek(-usrp.FRAME_SIZE, 1)
     
-    beams = usrp.getBeamCount(fh)
-    tunepols = usrp.getFramesPerObs(fh)
+    beams = usrp.get_beam_count(fh)
+    tunepols = usrp.get_frames_per_obs(fh)
     tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
     beampols = tunepol
 
     # Offset in frames for beampols beam/tuning/pol. sets
-    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
+    offset = int(round(args.skip * srate / junkFrame.payload.data.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
-    fh.seek(offset*usrp.FrameSize, 1)
+    fh.seek(offset*usrp.FRAME_SIZE, 1)
     
     # Iterate on the offsets until we reach the right point in the file.  This
     # is needed to deal with files that start with only one tuning and/or a 
@@ -54,20 +49,20 @@ def main(args):
     while True:
         ## Figure out where in the file we are and what the current tuning/sample 
         ## rate is
-        junkFrame = usrp.readFrame(fh)
-        srate = junkFrame.getSampleRate()
-        t1 = junkFrame.getTime()
-        tunepols = usrp.getFramesPerObs(fh)
+        junkFrame = usrp.read_frame(fh)
+        srate = junkFrame.sample_rate
+        t1 = junkFrame.get_time()
+        tunepols = usrp.get_frames_per_obs(fh)
         tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
         beampols = tunepol
-        fh.seek(-usrp.FrameSize, 1)
+        fh.seek(-usrp.FRAME_SIZE, 1)
         
         ## See how far off the current frame is from the target
         tDiff = t1 - (t0 + args.skip)
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
-        cOffset = int(tCorr * srate / junkFrame.data.iq.size * beampols)
+        cOffset = int(tCorr * srate / junkFrame.payload.data.size * beampols)
         cOffset = int(1.0 * cOffset / beampols) * beampols
         offset += cOffset
         
@@ -75,11 +70,11 @@ def main(args):
         ## and check the location in the file again/
         if cOffset is 0:
             break
-        fh.seek(cOffset*usrp.FrameSize, 1)
+        fh.seek(cOffset*usrp.FRAME_SIZE, 1)
     
     # Update the offset actually used
     args.skip = t1 - t0
-    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
+    offset = int(round(args.skip * srate / junkFrame.payload.data.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
 
     # Make sure that the file chunk size contains is an intger multiple
@@ -89,12 +84,12 @@ def main(args):
     # Number of frames to integrate over
     toClip = False
     oldAverage = args.plot_range
-    if args.plot_range < junkFrame.data.iq.size/srate:		
+    if args.plot_range < junkFrame.payload.data.size/srate:		
         toClip = True
-        args.plot_range = junkFrame.data.iq.size/srate
-    nFrames = int(args.plot_range * srate / junkFrame.data.iq.size * beampols)
+        args.plot_range = junkFrame.payload.data.size/srate
+    nFrames = int(args.plot_range * srate / junkFrame.payload.data.size * beampols)
     nFrames = int(1.0 * nFrames / beampols) * beampols
-    args.plot_range = 1.0 * nFrames / beampols * junkFrame.data.iq.size / srate
+    args.plot_range = 1.0 * nFrames / beampols * junkFrame.payload.data.size / srate
 
     # Number of remaining chunks
     nChunks = int(math.ceil(1.0*(nFrames)/maxFrames))
@@ -104,7 +99,7 @@ def main(args):
     print("Beams: %i" % beams)
     print("Tune/Pols: %i %i %i %i" % tunepols)
     print("Sample Rate: %i Hz" % srate)
-    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
+    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.payload.data.size / srate))
     print("---")
     print("Offset: %.3f s (%i frames)" % (args.skip, offset))
     print("Plot time: %.3f s (%i frames; %i frames per beam/tune/pol)" % (args.plot_range, nFrames, nFrames / beampols))
@@ -116,12 +111,12 @@ def main(args):
 
     # Align the file handle so that the first frame read in the
     # main analysis loop is from tuning 1, polarization 0
-    junkFrame = usrp.readFrame(fh)
-    b,t,p = junkFrame.parseID()
+    junkFrame = usrp.read_frame(fh)
+    b,t,p = junkFrame.id
     while 2*(t-1)+p != 0:
-        junkFrame = usrp.readFrame(fh)
-        b,t,p = junkFrame.parseID()
-    fh.seek(-usrp.FrameSize, 1)
+        junkFrame = usrp.read_frame(fh)
+        b,t,p = junkFrame.id
+    fh.seek(-usrp.FRAME_SIZE, 1)
 
     # Master loop over all of the file chuncks
     standMapper = []
@@ -138,27 +133,27 @@ def main(args):
         
         count = {0:0, 1:0, 2:0, 3:0}
         tt = numpy.zeros((beampols,framesWork//beampols), dtype=numpy.int64) - 1
-        data = numpy.zeros((beampols,framesWork*junkFrame.data.iq.size//beampols), dtype=numpy.csingle)
+        data = numpy.zeros((beampols,framesWork*junkFrame.payload.data.size//beampols), dtype=numpy.csingle)
         
         # Inner loop that actually reads the frames into the data array
-        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.payload.data.size/beampols/srate)*1000.0))
         t0 = time.time()
         
         for j in xrange(framesWork):
             # Read in the next frame and anticipate any problems that could occur
             try:
-                cFrame = usrp.readFrame(fh, Verbose=False)
+                cFrame = usrp.read_frame(fh, Verbose=False)
             except:
                 break
                 
-            beam,tune,pol = cFrame.parseID()
+            beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             
-            tt[aStand, count[aStand]] = cFrame.data.timeTag
+            tt[aStand, count[aStand]] = cFrame.data.timetag
             if args.instantaneous_power:
-                data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = numpy.abs(cFrame.data.iq)**2
+                data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = numpy.abs(cFrame.payload.data)**2
             else:
-                data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
+                data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
             
             # Update the counters so that we can average properly later on
             count[aStand] += 1
@@ -192,8 +187,8 @@ def main(args):
                 ax.legend(loc=0)
 
             if args.mark_frames:
-                for j in xrange(0, samples-cFrame.data.iq.size, cFrame.data.iq.size):
-                    ax.vlines(float(j)/srate, limits[0], limits[1], color='k', label='%i' % tt[i,j/cFrame.data.iq.size])
+                for j in xrange(0, samples-cFrame.payload.data.size, cFrame.payload.data.size):
+                    ax.vlines(float(j)/srate, limits[0], limits[1], color='k', label='%i' % tt[i,j/cFrame.payload.data.size])
 
             ax.set_ylim(limits)
             ax.set_title('Beam %i, Tune. %i, Pol. %i' % (beam, i//2+1,i%2))

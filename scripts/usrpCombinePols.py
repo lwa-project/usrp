@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Simple script to combine two polarizations contained in two NPZ files 
 created by usrpWaterfall.py into a single NPZ file.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 # Python3 compatibility

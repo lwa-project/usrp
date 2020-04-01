@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Script to combine two polarizations contained in two HDF5 files 
 created by usrpHDFWaterfall.py into a single HDF5 file.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 # Python3 compatibility
@@ -98,7 +93,7 @@ def main(args):
             raise RuntimeError("Files contain a different number of observations")
             
         # Do the attributes match?
-        for key in ['Beam', 'sampleRate', 'tInt']:
+        for key in ['Beam', 'sample_rate', 'tInt']:
             try:
                 assert(obs1.attrs[key] == obs2.attrs[key])
             except AssertionError:

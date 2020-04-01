@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Given a USRP file, plot the time averaged spectra for each beam output over some 
 period.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 # Python3 compatibility
@@ -69,27 +64,27 @@ def main(args):
     elif args.hanning:
         window = numpy.hanning
     else:
-        window = fxc.noWindow
+        window = fxc.null_window
     args.window = window
     
     fh = open(args.filename, "rb")
-    usrp.FrameSize = usrp.getFrameSize(fh)
-    nFramesFile = os.path.getsize(args.filename) // usrp.FrameSize
+    usrp.FRAME_SIZE = usrp.get_frame_size(fh)
+    nFramesFile = os.path.getsize(args.filename) // usrp.FRAME_SIZE
     
-    junkFrame = usrp.readFrame(fh)
-    srate = junkFrame.getSampleRate()
-    t0 = junkFrame.getTime()
-    fh.seek(-usrp.FrameSize, 1)
+    junkFrame = usrp.read_frame(fh)
+    srate = junkFrame.sample_rate
+    t0 = junkFrame.get_time()
+    fh.seek(-usrp.FRAME_SIZE, 1)
     
-    beams = usrp.getBeamCount(fh)
-    tunepols = usrp.getFramesPerObs(fh)
+    beams = usrp.get_beam_count(fh)
+    tunepols = usrp.get_frames_per_obs(fh)
     tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
     beampols = tunepol
     
     # Offset in frames for beampols beam/tuning/pol. sets
-    offset = int(args.skip * srate / junkFrame.data.iq.size * beampols)
+    offset = int(args.skip * srate / junkFrame.payload.data.size * beampols)
     offset = int(1.0 * offset / beampols) * beampols
-    fh.seek(offset*usrp.FrameSize, 1)
+    fh.seek(offset*usrp.FRAME_SIZE, 1)
     
     # Iterate on the offsets until we reach the right point in the file.  This
     # is needed to deal with files that start with only one tuning and/or a 
@@ -97,20 +92,20 @@ def main(args):
     while True:
         ## Figure out where in the file we are and what the current tuning/sample 
         ## rate is
-        junkFrame = usrp.readFrame(fh)
-        srate = junkFrame.getSampleRate()
-        t1 = junkFrame.getTime()
-        tunepols = usrp.getFramesPerObs(fh)
+        junkFrame = usrp.read_frame(fh)
+        srate = junkFrame.sample_rate
+        t1 = junkFrame.get_time()
+        tunepols = usrp.get_frames_per_obs(fh)
         tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
         beampols = tunepol
-        fh.seek(-usrp.FrameSize, 1)
+        fh.seek(-usrp.FRAME_SIZE, 1)
         
         ## See how far off the current frame is from the target
         tDiff = t1 - (t0 + args.skip)
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
-        cOffset = int(tCorr * srate / junkFrame.data.iq.size * beampols)
+        cOffset = int(tCorr * srate / junkFrame.payload.data.size * beampols)
         cOffset = int(1.0 * cOffset / beampols) * beampols
         offset += cOffset
         
@@ -118,23 +113,23 @@ def main(args):
         ## and check the location in the file again/
         if cOffset is 0:
             break
-        fh.seek(cOffset*usrp.FrameSize, 1)
+        fh.seek(cOffset*usrp.FRAME_SIZE, 1)
         
     # Update the offset actually used
     args.skip = t1 - t0
-    offset = int(round(args.skip * srate / junkFrame.data.iq.size * beampols))
+    offset = int(round(args.skip * srate / junkFrame.payload.data.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
     
     # Make sure that the file chunk size contains is an integer multiple
     # of the FFT length so that no data gets dropped.  This needs to
     # take into account the number of beampols in the data, the FFT length,
     # and the number of samples per frame.
-    maxFrames = int(1.0*28000/beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
+    maxFrames = int(1.0*28000/beampols*junkFrame.payload.data.size/float(LFFT))*LFFT/junkFrame.payload.data.size*beampols
     
     # Number of frames to integrate over
-    nFramesAvg = int(args.average * srate / junkFrame.data.iq.size * beampols)
-    nFramesAvg = int(1.0 * nFramesAvg / beampols*junkFrame.data.iq.size/float(LFFT))*LFFT/junkFrame.data.iq.size*beampols
-    args.average = 1.0 * nFramesAvg / beampols * junkFrame.data.iq.size / srate
+    nFramesAvg = int(args.average * srate / junkFrame.payload.data.size * beampols)
+    nFramesAvg = int(1.0 * nFramesAvg / beampols*junkFrame.payload.data.size/float(LFFT))*LFFT/junkFrame.payload.data.size*beampols
+    args.average = 1.0 * nFramesAvg / beampols * junkFrame.payload.data.size / srate
     maxFrames = nFramesAvg
     
     # Number of remaining chunks (and the correction to the number of
@@ -145,22 +140,22 @@ def main(args):
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(junkFrame.getTime()) - DJD_OFFSET)
-    centralFreq1 = 0.0
-    centralFreq2 = 0.0
+    beginDate = ephem.Date(unix_to_utcjd(junkFrame.get_time()) - DJD_OFFSET)
+    central_freq1 = 0.0
+    central_freq2 = 0.0
     for i in xrange(4):
-        junkFrame = usrp.readFrame(fh)
-        b,t,p = junkFrame.parseID()
+        junkFrame = usrp.read_frame(fh)
+        b,t,p = junkFrame.id
         if p == 0 and t == 1:
-            centralFreq1 = junkFrame.getCentralFreq()
+            central_freq1 = junkFrame.central_freq
         elif p == 0 and t == 2:
-            centralFreq2 = junkFrame.getCentralFreq()
+            central_freq2 = junkFrame.central_freq
         else:
             pass
-    fh.seek(-4*usrp.FrameSize, 1)
+    fh.seek(-4*usrp.FRAME_SIZE, 1)
     
-    centralFreq1 = centralFreq1
-    centralFreq2 = centralFreq2
+    central_freq1 = central_freq1
+    central_freq2 = central_freq2
     
     # File summary
     print("Filename: %s" % args.filename)
@@ -168,8 +163,8 @@ def main(args):
     print("Beams: %i" % beams)
     print("Tune/Pols: %i %i %i %i" % tunepols)
     print("Sample Rate: %i Hz" % srate)
-    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (centralFreq1, centralFreq2))
-    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.data.iq.size / srate))
+    print("Tuning Frequency: %.3f Hz (1); %.3f Hz (2)" % (central_freq1, central_freq2))
+    print("Frames: %i (%.3f s)" % (nFramesFile, 1.0 * nFramesFile / beampols * junkFrame.payload.data.size / srate))
     print("---")
     print("Offset: %.3f s (%i frames)" % (args.skip, offset))
     print("Integration: %.3f s (%i frames; %i frames per beam/tune/pol)" % (args.average, nFramesAvg, nFramesAvg / beampols))
@@ -186,19 +181,19 @@ def main(args):
         
         # Read in the first 100 frames for each tuning/polarization
         count = {0:0, 1:0, 2:0, 3:0}
-        data = numpy.zeros((4, junkFrame.data.iq.size*100), dtype=numpy.csingle)
+        data = numpy.zeros((4, junkFrame.payload.data.size*100), dtype=numpy.csingle)
         for i in xrange(4*100):
             try:
-                cFrame = usrp.readFrame(fh, Verbose=False)
-            except errors.eofError:
+                cFrame = usrp.read_frame(fh, Verbose=False)
+            except errors.EOFError:
                 break
-            except errors.syncError:
+            except errors.SyncError:
                 continue
             
-            beam,tune,pol = cFrame.parseID()
+            beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             
-            data[aStand, count[aStand]*junkFrame.data.iq.size:(count[aStand]+1)*junkFrame.data.iq.size] = cFrame.data.iq
+            data[aStand, count[aStand]*junkFrame.payload.data.size:(count[aStand]+1)*junkFrame.payload.data.size] = cFrame.payload.data
             count[aStand] +=  1
         
         # Go back to where we started
@@ -262,29 +257,29 @@ def main(args):
         print("Working on chunk %i, %i frames remaining" % (i, framesRemaining))
         
         count = {0:0, 1:0, 2:0, 3:0}
-        data = numpy.zeros((4,framesWork*junkFrame.data.iq.size//beampols), dtype=numpy.csingle)
+        data = numpy.zeros((4,framesWork*junkFrame.payload.data.size//beampols), dtype=numpy.csingle)
         # If there are fewer frames than we need to fill an FFT, skip this chunk
         if data.shape[1] < LFFT:
             break
             
         # Inner loop that actually reads the frames into the data array
-        print("Working on %.1f ms of data" % ((framesWork*junkFrame.data.iq.size/beampols/srate)*1000.0))
+        print("Working on %.1f ms of data" % ((framesWork*junkFrame.payload.data.size/beampols/srate)*1000.0))
         
         for j in xrange(framesWork):
             # Read in the next frame and anticipate any problems that could occur
             try:
-                cFrame = usrp.readFrame(fh, Verbose=False)
-            except errors.eofError:
+                cFrame = usrp.read_frame(fh, Verbose=False)
+            except errors.EOFError:
                 break
-            except errors.syncError:
+            except errors.SyncError:
                 continue
                 
-            beam,tune,pol = cFrame.parseID()
+            beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             if j is 0:
-                cTime = cFrame.getTime()
+                cTime = cFrame.get_time()
                 
-            data[aStand, count[aStand]*cFrame.data.iq.size:(count[aStand]+1)*cFrame.data.iq.size] = cFrame.data.iq
+            data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
             count[aStand] +=  1
             
         # Correct the DC bias
@@ -293,9 +288,9 @@ def main(args):
             
         # Calculate the spectra for this block of data and then weight the results by 
         # the total number of frames read.  This is needed to keep the averages correct.
-        freq, tempSpec1 = fxc.SpecMaster(data[:2,:], LFFT=LFFT, window=args.window, verbose=True, SampleRate=srate, ClipLevel=clip1)
+        freq, tempSpec1 = fxc.SpecMaster(data[:2,:], LFFT=LFFT, window=args.window, verbose=True, sample_rate=srate, clip_level=clip1)
         
-        freq, tempSpec2 = fxc.SpecMaster(data[2:,:], LFFT=LFFT, window=args.window, verbose=True, SampleRate=srate, ClipLevel=clip2)
+        freq, tempSpec2 = fxc.SpecMaster(data[2:,:], LFFT=LFFT, window=args.window, verbose=True, sample_rate=srate, clip_level=clip2)
         
         # Save the results to the various master arrays
         masterTimes[i] = cTime
@@ -305,10 +300,10 @@ def main(args):
         masterSpectra[i,2,:] = tempSpec2[0,:]
         masterSpectra[i,3,:] = tempSpec2[1,:]
         
-        masterWeight[i,0,:] = int(count[0] * cFrame.data.iq.size / LFFT)
-        masterWeight[i,1,:] = int(count[1] * cFrame.data.iq.size / LFFT)
-        masterWeight[i,2,:] = int(count[2] * cFrame.data.iq.size / LFFT)
-        masterWeight[i,3,:] = int(count[3] * cFrame.data.iq.size / LFFT)
+        masterWeight[i,0,:] = int(count[0] * cFrame.payload.data.size / LFFT)
+        masterWeight[i,1,:] = int(count[1] * cFrame.payload.data.size / LFFT)
+        masterWeight[i,2,:] = int(count[2] * cFrame.payload.data.size / LFFT)
+        masterWeight[i,3,:] = int(count[3] * cFrame.payload.data.size / LFFT)
         
         # We don't really need the data array anymore, so delete it
         del(data)
@@ -318,7 +313,7 @@ def main(args):
     outname = os.path.split(args.filename)[1]
     outname = os.path.splitext(outname)[0]
     outname = '%s-waterfall.npz' % outname
-    numpy.savez(outname, freq=freq, freq1=freq+centralFreq1, freq2=freq+centralFreq2, times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.data.iq.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
+    numpy.savez(outname, freq=freq, freq1=freq+central_freq1, freq2=freq+central_freq2, times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.payload.data.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
     spec = numpy.squeeze( (masterWeight*masterSpectra).sum(axis=0) / masterWeight.sum(axis=0) )
     
     # The plots:  This is setup for the current configuration of 20 beampols
