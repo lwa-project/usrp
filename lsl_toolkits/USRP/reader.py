@@ -211,7 +211,7 @@ def read_frame(filehandle, verbose=False):
         tln = struct.calcsize(typ)
         
         ## The rx_time is store as a pair, deal with that fact
-        if key == 'rx_time':
+        if key == b'rx_time':
             stop += 5
             tln = 17
         
@@ -224,20 +224,20 @@ def read_frame(filehandle, verbose=False):
             out = out[0]
             
         ## Deal the the 'type' key
-        if key == 'type':
+        if key == b'type':
             out = _type2name[out]
             
         ## Store
         header[key] = out
         
     # Cleanup time
-    header['rx_time'] = (numpy.uint64(header['rx_time'][0]), numpy.float128(header['rx_time'][2]))
+    header[b'rx_time'] = (numpy.uint64(header['rx_time'][0]), numpy.float128(header['rx_time'][2]))
         
     # Extended header (optional)
-    if header['strt'] != 149:
+    if header[b'strt'] != 149:
         rawHeader = filehandle.read(header['strt']-149)
         
-        for key,typ in zip(('rx_freq',), ('d',)):
+        for key,typ in zip((b'rx_freq',), ('d',)):
             start = rawHeader.find(key)
             stop = start + len(key) + 1
             tln = struct.calcsize(typ)
@@ -251,26 +251,26 @@ def read_frame(filehandle, verbose=False):
             ## Store
             header[key] = out
     else:
-        header['rx_freq'] = 0.0
+        header[b'rx_freq'] = 0.0
         
     # Data
-    dataRaw = filehandle.read(header['bytes'])
-    if header['cplx']:
-        dataRaw = struct.unpack('>%i%s' % (2*header['bytes']//header['size'], header['type']), dataRaw)
+    dataRaw = filehandle.read(header[b'bytes'])
+    if header[b'cplx']:
+        dataRaw = struct.unpack('>%i%s' % (2*header[b'bytes']//header[b'size'], header[b'type']), dataRaw)
         
-        data = numpy.zeros( header['bytes']//header['size'], dtype=numpy.complex64)
+        data = numpy.zeros( header[b'bytes']//header[b'size'], dtype=numpy.complex64)
         data.real = dataRaw[0::2]
         data.imag = dataRaw[1::2]
     else:
-        dataRaw = struct.unpack('>%i%s' % (header['bytes']//header['size'], header['type']), dataRaw)
+        dataRaw = struct.unpack('>%i%s' % (header[b'bytes']//header[b'size'], header[b'type']), dataRaw)
         
-        data = numpy.zeros( header['bytes']//header['size'], dtype=numpy.int32)
+        data = numpy.zeros( header[b'bytes']//header[b'size'], dtype=numpy.int32)
         data.real = dataRaw
         
     # Build the frame
-    timetag = header['rx_time'][0]*numpy.uint64(fS) + numpy.uint64( header['rx_time'][1]*fS )
-    fHeader = FrameHeader(size=header['strt'], type=header['type'], complex=header['cplx'], sample_rate=header['rx_rate'])
-    fData = FramePayload(size=header['bytes'], timetag=timetag, central_freq=header['rx_freq'], iq=data)
+    timetag = header[b'rx_time'][0]*numpy.uint64(fS) + numpy.uint64( header[b'rx_time'][1]*fS )
+    fHeader = FrameHeader(size=header[b'strt'], type=header[b'type'], complex=header[b'cplx'], sample_rate=header[b'rx_rate'])
+    fData = FramePayload(size=header[b'bytes'], timetag=timetag, central_freq=header[b'rx_freq'], iq=data)
     newFrame = Frame(header=fHeader, payload=fData)
     
     return newFrame
