@@ -577,7 +577,7 @@ def main(args):
     # there are no metadata, create a single "observation" that covers the
     # whole file.
     obsList = {}
-    obsList[1] = (datetime.utcfromtimestamp(t1), datetime(2222,12,31,23,59,59), args.duration, srate)
+    obsList[1] = (datetime.utcfromtimestamp(t1i+t1f), datetime(2222,12,31,23,59,59), args.duration, srate)
     fillMinimum(f, 1, beam, srate)
     
     if args.filename.find('pol0') != -1:
@@ -589,7 +589,7 @@ def main(args):
         
     for o in sorted(obsList.keys()):
         for t in (1,2):
-            createDataSets(f, o, t, numpy.arange(LFFT-1 if float(fxc.__version__) < 0.8 else LFFT, dtype=numpy.float32), int(round(obsList[o][2]/args.average)), data_products)
+            createDataSets(f, o, t, numpy.arange(LFFT, dtype=numpy.float32), int(round(obsList[o][2]/args.average)), data_products)
             
     f.attrs['FileGenerator'] = 'usrpHDFWaterfall.py'
     f.attrs['InputData'] = os.path.basename(args.filename)
@@ -615,7 +615,7 @@ def main(args):
     for o in sorted(obsList.keys()):
         try:
             processDataBatch(fh, data_products,  obsList[o][0], obsList[o][2], obsList[o][3], args, ds, obsID=o, clip1=clip1, clip2=clip2)
-        except RuntimeError, e:
+        except RuntimeError as e:
             print("Observation #%i: %s, abandoning this observation" % (o, str(e)))
 
     # Save the output to a HDF5 file
