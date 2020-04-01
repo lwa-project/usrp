@@ -6,9 +6,8 @@ import sys
 if sys.version_info > (3,):
     xrange = range
     
-__version__ = '0.1'
-__revision__ = '$Rev$'
+__version__ = '0.2'
 
 
-from .reader import FrameHeader, FrameData, Frame, readFrame, getSampleRate, getFrameSize, getBeamCount, getFramesPerObs, filterCodes
+from .reader import FrameHeader, FramePayload, Frame, read_frame, get_sample_rate, get_frame_size, get_beam_count, get_frames_per_obs, FILTER_CODES
 
