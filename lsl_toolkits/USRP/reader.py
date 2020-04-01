@@ -235,7 +235,7 @@ def read_frame(filehandle, verbose=False):
         
     # Extended header (optional)
     if header[b'strt'] != 149:
-        rawHeader = filehandle.read(header['strt']-149)
+        rawHeader = filehandle.read(header[b'strt']-149)
         
         for key,typ in zip((b'rx_freq',), ('d',)):
             start = rawHeader.find(key)
