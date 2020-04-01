@@ -13,7 +13,6 @@ if sys.version_info > (3,):
     xrange = range
     
 __version__ = '0.1'
-__revision__ = '$Rev$'
-__all__ = ['fS', '__version__', '__revision__', '__all__']
+__all__ = ['fS',]
 
 fS = 100.0e6	# Hz
