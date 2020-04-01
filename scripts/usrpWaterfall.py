@@ -73,7 +73,7 @@ def main(args):
     
     junkFrame = usrp.read_frame(fh)
     srate = junkFrame.sample_rate
-    t0 = junkFrame.get_time()
+    t0i, t1f = junkFrame.time
     fh.seek(-usrp.FRAME_SIZE, 1)
     
     beams = usrp.get_beam_count(fh)
@@ -94,14 +94,14 @@ def main(args):
         ## rate is
         junkFrame = usrp.read_frame(fh)
         srate = junkFrame.sample_rate
-        t1 = junkFrame.get_time()
+        t1i, t1f = junkFrame.time
         tunepols = usrp.get_frames_per_obs(fh)
         tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
         beampols = tunepol
         fh.seek(-usrp.FRAME_SIZE, 1)
         
         ## See how far off the current frame is from the target
-        tDiff = t1 - (t0 + args.skip)
+        tDiff = t1i - (t0i + args.skip) + t1f - t0f
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
@@ -116,7 +116,7 @@ def main(args):
         fh.seek(cOffset*usrp.FRAME_SIZE, 1)
         
     # Update the offset actually used
-    args.skip = t1 - t0
+    args.skip = t1i - t0i + t1f - t0f
     offset = int(round(args.skip * srate / junkFrame.payload.data.size * beampols))
     offset = int(1.0 * offset / beampols) * beampols
     
@@ -140,7 +140,7 @@ def main(args):
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(junkFrame.get_time()) - DJD_OFFSET)
+    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame)) - DJD_OFFSET)
     central_freq1 = 0.0
     central_freq2 = 0.0
     for i in xrange(4):
@@ -277,7 +277,7 @@ def main(args):
             beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             if j is 0:
-                cTime = cFrame.get_time()
+                cTime = sum(cFrame.time)
                 
             data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
             count[aStand] +=  1

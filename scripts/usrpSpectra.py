@@ -61,7 +61,7 @@ def main(args):
     
     junkFrame = usrp.read_frame(fh)
     srate = junkFrame.sample_rate
-    t0 = junkFrame.get_time()
+    t0i, t0f = junkFrame.time
     fh.seek(-usrp.FRAME_SIZE, 1)
     
     beams = usrp.get_beam_count(fh)
@@ -82,14 +82,14 @@ def main(args):
         ## rate is
         junkFrame = usrp.read_frame(fh)
         srate = junkFrame.sample_rate
-        t1 = junkFrame.get_time()
+        t1i, t1f = junkFrame.time
         tunepols = usrp.get_frames_per_obs(fh)
         tunepol = tunepols[0] + tunepols[1] + tunepols[2] + tunepols[3]
         beampols = tunepol
         fh.seek(-usrp.FRAME_SIZE, 1)
         
         ## See how far off the current frame is from the target
-        tDiff = t1 - (t0 + args.skip)
+        tDiff = t1i - (t0i + args.skip) + t1f - t0f
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0
@@ -104,7 +104,7 @@ def main(args):
         fh.seek(cOffset*usrp.FRAME_SIZE, 1)
         
     # Update the offset actually used
-    args.skip = t1 - t0
+    args.skip = t1i - t0i + t1f - t0f
     
     # Make sure that the file chunk size contains is an integer multiple
     # of the FFT length so that no data gets dropped.  This needs to
@@ -121,7 +121,7 @@ def main(args):
     nChunks = int(math.ceil(1.0*(nFrames)/maxFrames))
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(junkFrame.get_time()) - DJD_OFFSET)
+    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time)) - DJD_OFFSET)
     central_freq1 = 0.0
     junkFrame = usrp.read_frame(fh)
     central_freq1 = junkFrame.central_freq

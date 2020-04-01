@@ -33,7 +33,7 @@ def main(args):
     tunepols = max(usrp.get_frames_per_obs(fh))
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(astro.unix_to_utcjd(junkFrame.get_time()) - astro.DJD_OFFSET)
+    beginDate = ephem.Date(astro.unix_to_utcjd(sum(junkFrame.time)) - astro.DJD_OFFSET)
     central_freq1 = 0.0
     central_freq2 = 0.0
     for i in xrange(tunepols):
