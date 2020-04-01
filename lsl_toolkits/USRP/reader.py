@@ -114,7 +114,7 @@ class FramePayload(FramePayloadBase):
     
     def __init__(self, size=None, timetag=None, central_freq=None, iq=None):
         self.size = size
-        self.centra_freq = central_freq
+        self.central_freq = central_freq
         self.timetag = timetag
         FramePayloadBase.__init__(self, iq)
         
@@ -150,7 +150,7 @@ class Frame(FrameBase):
         return self.header.size + self.payload.size
         
     @property
-    def parseID(self):
+    def id(self):
         """
         Convenience wrapper for the Frame.FrameHeader.id 
         property.

@@ -73,7 +73,7 @@ def main(args):
     
     junkFrame = usrp.read_frame(fh)
     srate = junkFrame.sample_rate
-    t0i, t1f = junkFrame.time
+    t0i, t0f = junkFrame.time
     fh.seek(-usrp.FRAME_SIZE, 1)
     
     beams = usrp.get_beam_count(fh)

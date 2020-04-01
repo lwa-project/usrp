@@ -70,14 +70,14 @@ class usrp_tests(unittest.TestCase):
         
         fh = open(usrpFile, 'rb')
         frame = usrp.read_frame(fh)
-        tt = 1*frame.data.timetag
+        tt = 1*frame.payload.timetag
         ttSkip = int(fS / frame.sample_rate * frame.payload.data.size)
         
         for i in xrange(2, 6):
             frame = usrp.read_frame(fh)
             
-            self.assertEqual(frame.data.timetag, tt+ttSkip)
-            tt = 1*frame.data.timetag
+            self.assertEqual(frame.payload.timetag, tt+ttSkip)
+            tt = 1*frame.payload.timetag
             
         fh.close()
         

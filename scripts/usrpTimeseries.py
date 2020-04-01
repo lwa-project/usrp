@@ -58,7 +58,7 @@ def main(args):
         fh.seek(-usrp.FRAME_SIZE, 1)
         
         ## See how far off the current frame is from the target
-        tDiff = t1i - (t0i + args.skip) + (t1f - t0r)
+        tDiff = t1i - (t0i + args.skip) + (t1f - t0f)
         
         ## Half that to come up with a new seek parameter
         tCorr = -tDiff / 2.0

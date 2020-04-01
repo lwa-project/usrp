@@ -332,7 +332,7 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequency
-    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time) - DJD_OFFSET)
+    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time)) - DJD_OFFSET)
     central_freq1 = 0.0
     central_freq2 = 0.0
     for i in xrange(4):
