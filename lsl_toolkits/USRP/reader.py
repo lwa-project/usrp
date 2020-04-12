@@ -123,14 +123,11 @@ class FramePayload(FramePayloadBase):
     def time(self):
         """
         Function to convert the time tag from samples since the UNIX epoch
-        (UTC 1970-01-01 00:00:00) to seconds since the UNIX epoch as a two-
-        element tuple.
+        (UTC 1970-01-01 00:00:00) to seconds since the UNIX epoch as a 
+        `lsl.reader.base.FrameTime` instance.
         """
         
-        seconds_i = self.timetag // int(fS)
-        seconds_f = (self.timetag % int(fS)) / fS
-        
-        return seconds_i, seconds_f
+        return FrameTime.from_dp_timetag(self.timetag)
 
 
 class Frame(FrameBase):
