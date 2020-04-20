@@ -4,11 +4,11 @@
 Run through a USRP file and determine if it is bad or not.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -33,10 +33,10 @@ def main(args):
     tunepols = max(usrp.get_frames_per_obs(fh))
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(astro.unix_to_utcjd(sum(junkFrame.time)) - astro.DJD_OFFSET)
+    beginDate = junkFrame.time.datetime
     central_freq1 = 0.0
     central_freq2 = 0.0
-    for i in xrange(tunepols):
+    for i in range(tunepols):
         junkFrame = usrp.read_frame(fh)
         b,t,p = junkFrame.id
         if p == 0 and t == 1:
@@ -78,7 +78,7 @@ def main(args):
     while True:
         count = {0:0, 1:0, 2:0, 3:0}
         data = numpy.empty((4,chunkLength*junkFrame.payload.data.size/tunepols), dtype=numpy.csingle)
-        for j in xrange(chunkLength):
+        for j in range(chunkLength):
             # Read in the next frame and anticipate any problems that could occur
             try:
                 cFrame = usrp.read_frame(fh, Verbose=False)
@@ -106,7 +106,7 @@ def main(args):
             
             clipFraction.append( numpy.zeros(4) )
             meanPower.append( data.mean(axis=1) )
-            for j in xrange(4):
+            for j in range(4):
                 bad = numpy.nonzero(data[j,:] > args.trim_level)[0]
                 clipFraction[-1][j] = 1.0*len(bad) / data.shape[1]
             

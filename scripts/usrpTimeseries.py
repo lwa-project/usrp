@@ -4,11 +4,11 @@
 Given a USRP file, plot the time series I and Q data as a function of time.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -139,7 +139,7 @@ def main(args):
         print("Working on %.1f ms of data" % ((framesWork*junkFrame.payload.data.size/beampols/srate)*1000.0))
         t0 = time.time()
         
-        for j in xrange(framesWork):
+        for j in range(framesWork):
             # Read in the next frame and anticipate any problems that could occur
             try:
                 cFrame = usrp.read_frame(fh, Verbose=False)
@@ -168,7 +168,7 @@ def main(args):
             print("Plotting only the first %i samples (%.3f ms) of data" % (samples, oldAverage*1000.0))
             
         sortedMapper = sorted(standMapper)
-        for i in xrange(data.shape[0]):
+        for i in range(data.shape[0]):
             ax = fig.add_subplot(figsX,figsY,i+1)
             if args.instantaneous_power:
                 limits = (-10, 70000)
@@ -187,7 +187,7 @@ def main(args):
                 ax.legend(loc=0)
 
             if args.mark_frames:
-                for j in xrange(0, samples-cFrame.payload.data.size, cFrame.payload.data.size):
+                for j in range(0, samples-cFrame.payload.data.size, cFrame.payload.data.size):
                     ax.vlines(float(j)/srate, limits[0], limits[1], color='k', label='%i' % tt[i,j/cFrame.payload.data.size])
 
             ax.set_ylim(limits)

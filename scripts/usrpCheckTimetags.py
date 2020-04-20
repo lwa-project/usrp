@@ -4,11 +4,11 @@
 Check the time times in a USRP file for flow.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -37,7 +37,7 @@ def main(args):
     # Store the information about the first frame and convert the timetag to 
     # an ephem.Date object.
     prevTime = junkFrame.payload.timetag
-    prevDate = ephem.Date(astro.unix_to_utcjd(sum(currFrame.time)) - astro.DJD_OFFSET)
+    prevDate = currFrame.time.datetime
     
     # Skip ahead
     fh.seek(int(skip*sample_rate/junkFrame.payload.data.size)*usrp.FRAME_SIZE)
@@ -55,13 +55,13 @@ def main(args):
     prevTime = [0, 0, 0, 0]
     prevDate = ['', '', '', '']
     prevNumb = [0, 0, 0, 0]
-    for i in xrange(1):
+    for i in range(1):
         currFrame = usrp.read_frame(fh)
         beam, tune, pol = currFrame.id
         rID = 2*(tune-1) + pol
         
         prevTime[rID] = currFrame.payload.timetag
-        prevDate[rID] = ephem.Date(astro.unix_to_utcjd(sum(currFrame.time)) - astro.DJD_OFFSET)
+        prevDate[rID] = currFrame.time.datetime
         prevNumb[rID] = 1 + k // 1
         #prevNumb[rID] = k
         
@@ -76,7 +76,7 @@ def main(args):
         beam, tune, pol = currFrame.id
         rID = 2*(tune-1) + pol
         currTime = currFrame.payload.timetag
-        currDate = ephem.Date(astro.unix_to_utcjd(sum(currFrame.time)) - astro.DJD_OFFSET)
+        currDate = currFrame.time.datetime
         currNumb = 1 + k // 1
         #currNumb = k
         

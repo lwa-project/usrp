@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Python module to read in USRP data.  This module defines the following 
 classes for storing the USRP data found in a file:
@@ -30,11 +28,11 @@ get_frames_per_obs
   are associated with each beam.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import copy
 import numpy
@@ -60,7 +58,7 @@ _type2name = {0: 'b',
 
 # List of filter codes and their corresponding sample rates in Hz
 FILTER_CODES = {}
-for i in xrange(9):
+for i in range(9):
     FILTER_CODES[i] = fS / 2**(9-i)
 
 

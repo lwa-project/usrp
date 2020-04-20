@@ -4,11 +4,11 @@
 Given a USRP file, plot the time averaged spectra.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -121,7 +121,7 @@ def main(args):
     nChunks = int(math.ceil(1.0*(nFrames)/maxFrames))
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time)) - DJD_OFFSET)
+    beginDate = junkFrame.time.datetime
     central_freq1 = 0.0
     junkFrame = usrp.read_frame(fh)
     central_freq1 = junkFrame.central_freq
@@ -204,7 +204,7 @@ def main(args):
             count[aStand] += 1
             
         # Correct the DC bias
-        for j in xrange(data.shape[0]):
+        for j in range(data.shape[0]):
             data[j,:] -= data[j,:].mean()
             
         # Calculate the spectra for this block of data and then weight the results by 

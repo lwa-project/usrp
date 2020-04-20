@@ -5,11 +5,11 @@ Given a USRP file, plot the time averaged spectra for each beam output over some
 period.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -195,7 +195,7 @@ def estimateclip_level(fh, beampols):
     # Read in the first 100 frames for each tuning/polarization
     count = {0:0, 1:0, 2:0, 3:0}
     data = numpy.zeros((4, junkFrame.payload.data.size*100), dtype=numpy.csingle)
-    for i in xrange(4*100):
+    for i in range(4*100):
         try:
             cFrame = usrp.read_frame(fh, Verbose=False)
         except errors.EOFError:
@@ -213,7 +213,7 @@ def estimateclip_level(fh, beampols):
     fh.seek(filePos)
     
     # Correct the DC bias
-    for j in xrange(data.shape[0]):
+    for j in range(data.shape[0]):
         data[j,:] -= data[j,:].mean()
         
     # Compute the robust mean and standard deviation for I and Q for each
@@ -222,7 +222,7 @@ def estimateclip_level(fh, beampols):
     meanQ = []
     stdsI = []
     stdsQ = []
-    for i in xrange(4):
+    for i in range(4):
         meanI.append( robust.mean(data[i,:].real) )
         meanQ.append( robust.mean(data[i,:].imag) )
         
@@ -231,7 +231,7 @@ def estimateclip_level(fh, beampols):
     
     # Report
     print("Statistics:")
-    for i in xrange(4):
+    for i in range(4):
         print(" Mean %i: %.3f + %.3f j" % (i+1, meanI[i], meanQ[i]))
         print(" Std  %i: %.3f + %.3f j" % (i+1, stdsI[i], stdsQ[i]))
     
@@ -291,16 +291,16 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
     # Find the start of the observation
     junkFrame = usrp.read_frame(fh)
     srate = junkFrame.sample_rate
-    t0 = sum(junkFrame.time)
+    t0 = junkFrame.time
     fh.seek(-usrp.FRAME_SIZE, 1)
     
     print('Looking for #%i at %s with sample rate %.1f Hz...' % (obsID, tStart, sample_rate))
-    while datetime.utcfromtimestamp(t0) < tStart or srate != sample_rate:
+    while t0.datetime < tStart or srate != sample_rate:
         junkFrame = usrp.read_frame(fh)
         srate = junkFrame.sample_rate
-        t0 = sum(junkFrame.time)
+        t0 = junkFrame.time
     print('... Found #%i at %s with sample rate %.1f Hz' % (obsID, datetime.utcfromtimestamp(t0), srate))
-    tDiff = datetime.utcfromtimestamp(t0) - tStart
+    tDiff = t0.datetime - tStart
     try:
         duration = duration - tDiff.total_seconds()
     except:
@@ -332,10 +332,10 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequency
-    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time)) - DJD_OFFSET)
+    beginDate = junkFrame.time.datetime
     central_freq1 = 0.0
     central_freq2 = 0.0
-    for i in xrange(4):
+    for i in range(4):
         junkFrame = usrp.read_frame(fh)
         b,t,p = junkFrame.id
         if p == 0 and t == 1:
@@ -361,7 +361,7 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
     obs.attrs['RBW_Units'] = 'Hz'
     
     done = False
-    for i in xrange(nChunks):
+    for i in range(nChunks):
         # Find out how many frames remain in the file.  If this number is larger
         # than the maximum of frames we can work with at a time (maxFrames),
         # only deal with that chunk
@@ -381,7 +381,7 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
         # Inner loop that actually reads the frames into the data array
         print("Working on %.1f ms of data" % ((framesWork*junkFrame.payload.data.size/beampols/srate)*1000.0))
         
-        for j in xrange(framesWork):
+        for j in range(framesWork):
             # Read in the next frame and anticipate any problems that could occur
             try:
                 cFrame = usrp.read_frame(fh, Verbose=False)
@@ -394,13 +394,13 @@ def processDataBatchLinear(fh, data_products, tStart, duration, sample_rate, arg
             aStand = 2*(tune-1) + pol
             print(pol)
             if j is 0:
-                cTime = sum(cFrame.time)
+                cTime = float(cFrame.time)
                 
             data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
             count[aStand] +=  1
             
         # Correct the DC bias
-        for j in xrange(data.shape[0]):
+        for j in range(data.shape[0]):
             data[j,:] -= data[j,:].mean()
             
         # Save out some easy stuff
@@ -532,10 +532,10 @@ def main(args):
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame.time)) - DJD_OFFSET)
+    beginDate = junkFrame.time.datetime
     central_freq1 = 0.0
     central_freq2 = 0.0
-    for i in xrange(4):
+    for i in range(4):
         junkFrame = usrp.read_frame(fh)
         b,t,p = junkFrame.id
         if p == 0 and t == 1:

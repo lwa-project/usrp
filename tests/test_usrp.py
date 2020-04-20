@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-
 """
 Unit test for lsl_toolkit.USRP module.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import unittest
@@ -17,7 +15,6 @@ from lsl_toolkits import USRP as usrp
 from lsl_toolkits.USRP.common import fS
 
 
-__revision__ = "$Rev$"
 __version__  = "0.1"
 __author__    = "Jayce Dowell"
 
@@ -73,7 +70,7 @@ class usrp_tests(unittest.TestCase):
         tt = 1*frame.payload.timetag
         ttSkip = int(fS / frame.sample_rate * frame.payload.data.size)
         
-        for i in xrange(2, 6):
+        for i in range(2, 6):
             frame = usrp.read_frame(fh)
             
             self.assertEqual(frame.payload.timetag, tt+ttSkip)

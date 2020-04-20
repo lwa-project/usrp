@@ -5,11 +5,11 @@ Given a USRP file, plot the time averaged spectra for each beam output over some
 period.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -140,10 +140,10 @@ def main(args):
     nFrames = nFramesAvg*nChunks
     
     # Date & Central Frequnecy
-    beginDate = ephem.Date(unix_to_utcjd(sum(junkFrame)) - DJD_OFFSET)
+    beginDate = junkFrame.time.datetime
     central_freq1 = 0.0
     central_freq2 = 0.0
-    for i in xrange(4):
+    for i in range(4):
         junkFrame = usrp.read_frame(fh)
         b,t,p = junkFrame.id
         if p == 0 and t == 1:
@@ -182,7 +182,7 @@ def main(args):
         # Read in the first 100 frames for each tuning/polarization
         count = {0:0, 1:0, 2:0, 3:0}
         data = numpy.zeros((4, junkFrame.payload.data.size*100), dtype=numpy.csingle)
-        for i in xrange(4*100):
+        for i in range(4*100):
             try:
                 cFrame = usrp.read_frame(fh, Verbose=False)
             except errors.EOFError:
@@ -200,7 +200,7 @@ def main(args):
         fh.seek(filePos)
         
         # Correct the DC bias
-        for j in xrange(data.shape[0]):
+        for j in range(data.shape[0]):
             data[j,:] -= data[j,:].mean()
             
         # Compute the robust mean and standard deviation for I and Q for each
@@ -209,7 +209,7 @@ def main(args):
         meanQ = []
         stdsI = []
         stdsQ = []
-        for i in xrange(4):
+        for i in range(4):
             meanI.append( robust.mean(data[i,:].real) )
             meanQ.append( robust.mean(data[i,:].imag) )
             
@@ -218,7 +218,7 @@ def main(args):
             
         # Report
         print("Statistics:")
-        for i in xrange(4):
+        for i in range(4):
             print(" Mean %i: %.3f + %.3f j" % (i+1, meanI[i], meanQ[i]))
             print(" Std  %i: %.3f + %.3f j" % (i+1, stdsI[i], stdsQ[i]))
             
@@ -245,7 +245,7 @@ def main(args):
     masterWeight = numpy.zeros((nChunks, 4, LFFT))
     masterSpectra = numpy.zeros((nChunks, 4, LFFT))
     masterTimes = numpy.zeros(nChunks)
-    for i in xrange(nChunks):
+    for i in range(nChunks):
         # Find out how many frames remain in the file.  If this number is larger
         # than the maximum of frames we can work with at a time (maxFrames),
         # only deal with that chunk
@@ -265,7 +265,7 @@ def main(args):
         # Inner loop that actually reads the frames into the data array
         print("Working on %.1f ms of data" % ((framesWork*junkFrame.payload.data.size/beampols/srate)*1000.0))
         
-        for j in xrange(framesWork):
+        for j in range(framesWork):
             # Read in the next frame and anticipate any problems that could occur
             try:
                 cFrame = usrp.read_frame(fh, Verbose=False)
@@ -277,13 +277,13 @@ def main(args):
             beam,tune,pol = cFrame.id
             aStand = 2*(tune-1) + pol
             if j is 0:
-                cTime = sum(cFrame.time)
+                cTime = cFrame.time
                 
             data[aStand, count[aStand]*cFrame.payload.data.size:(count[aStand]+1)*cFrame.payload.data.size] = cFrame.payload.data
             count[aStand] +=  1
             
         # Correct the DC bias
-        for j in xrange(data.shape[0]):
+        for j in range(data.shape[0]):
             data[j,:] -= data[j,:].mean()
             
         # Calculate the spectra for this block of data and then weight the results by 
@@ -313,7 +313,7 @@ def main(args):
     outname = os.path.split(args.filename)[1]
     outname = os.path.splitext(outname)[0]
     outname = '%s-waterfall.npz' % outname
-    numpy.savez(outname, freq=freq, freq1=freq+central_freq1, freq2=freq+central_freq2, times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.payload.data.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in xrange(masterSpectra.shape[1])])
+    numpy.savez(outname, freq=freq, freq1=freq+central_freq1, freq2=freq+central_freq2, times=masterTimes, spec=masterSpectra, tInt=(maxFrames*cFrame.payload.data.size/beampols/srate), srate=srate,  standMapper=[4*(beam-1) + i for i in range(masterSpectra.shape[1])])
     spec = numpy.squeeze( (masterWeight*masterSpectra).sum(axis=0) / masterWeight.sum(axis=0) )
     
     # The plots:  This is setup for the current configuration of 20 beampols
@@ -324,7 +324,7 @@ def main(args):
     # Put the frequencies in the best units possible
     freq, units = bestFreqUnits(freq)
     
-    for i in xrange(1):
+    for i in range(1):
         ax = fig.add_subplot(figsX,figsY,i+1)
         currSpectra = numpy.squeeze( numpy.log10(masterSpectra[:,i,:])*10.0 )
         currSpectra = numpy.where( numpy.isfinite(currSpectra), currSpectra, -10)
