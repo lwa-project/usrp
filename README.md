@@ -9,34 +9,22 @@ This package provides a reader for USRP data generated through GNURadio.
 
 REQUIREMENTS
 ------------
-  * python >= 2.6 and python < 3.0
+  * python >= 2.7
   * numpy >= 1.2
   * h5py
 
-BUILDING
---------
+INSTALLING
+----------
 The USRP package is installed as a regular Python package using distutils.  
 Unzip and untar the source distribution. Setup the python interpreter you 
 wish to use for running the package applications and switch to the root of 
 the source distribution tree.
 
-To build the USRP package, run:
-    
-    python setup.py build
-
-TESTING
--------
-To test the as-build USRP package, run:
-    
-    python setup.py test
-
-INSTALLATION
-------------
 Install USRP by running:
     
-    python setup.py install [--prefix=<prefix>|--user]
+    pip install [--root=<prefix>|--user] .
 
-If the '--prefix' option is not provided, then the installation 
+If the '--root' option is not provided, then the installation 
 tree root directory is the same as for the python interpreter used 
 to run `setup.py`.  For instance, if the python interpreter is in
 '/usr/local/bin/python', then <prefix> will be set to '/usr/local'.
@@ -53,6 +41,15 @@ environment to include directory '<prefix>/lib/python2.6/site-packages'.
 
 If the '--user' option is provided, then then installation tree root 
 directory will be in the current user's home directory.
+
+UNIT TESTS
+----------
+Unit tests for the package may be found in the 'USRP/tests' sub-directory in
+the package source distribution tree.  To run the complete suite of package unit 
+tests:
+
+    cd tests
+    python -m unittest discover
 
 DOCUMENTATION
 -------------

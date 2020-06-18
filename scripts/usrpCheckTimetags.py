@@ -1,20 +1,12 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Check the time times in a USRP file for flow.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info > (3,):
-    xrange = range
-    
+
 import os
 import sys
 import ephem
@@ -33,40 +25,40 @@ def main(args):
     # Get the first frame and find out what the firt time tag is, which the
     # first frame number is, and what the sample rate it.  From the sample 
     # rate, estimate how the time tag should advance between frames.
-    usrp.FrameSize = usrp.getFrameSize(fh)
-    junkFrame = usrp.readFrame(fh)
-    sampleRate = junkFrame.getSampleRate()
-    tagSkip = int(fS / sampleRate * junkFrame.data.iq.shape[0])
-    fh.seek(-usrp.FrameSize, 1)
+    usrp.FRAME_SIZE = usrp.get_frame_size(fh)
+    junkFrame = usrp.read_frame(fh)
+    sample_rate = junkFrame.sample_rate
+    tagSkip = int(fS / sample_rate * junkFrame.payload.data.shape[0])
+    fh.seek(-usrp.FRAME_SIZE, 1)
     
     # Store the information about the first frame and convert the timetag to 
     # an ephem.Date object.
-    prevTime = junkFrame.data.timeTag
-    prevDate = ephem.Date(astro.unix_to_utcjd(junkFrame.getTime()) - astro.DJD_OFFSET)
+    prevTime = junkFrame.payload.timetag
+    prevDate = currFrame.time.datetime
     
     # Skip ahead
-    fh.seek(int(skip*sampleRate/junkFrame.data.iq.size)*usrp.FrameSize)
+    fh.seek(int(skip*sample_rate/junkFrame.payload.data.size)*usrp.FRAME_SIZE)
     
     # Report on the file
     print("Filename: %s" % os.path.basename(args[0]))
     print("Date of first frame: %i -> %s" % (prevTime, str(prevDate)))
-    print("Sample rate: %i Hz" % sampleRate)
+    print("Sample rate: %i Hz" % sample_rate)
     print("Time tag skip per frame: %i" % tagSkip)
     if skip != 0:
-        print("Skipping ahead %i frames (%.6f seconds)" % (int(skip*sampleRate/junkFrame.data.iq.size), int(skip*sampleRate/junkFrame.data.iq.size)*junkFrame.data.iq.size/sampleRate))
+        print("Skipping ahead %i frames (%.6f seconds)" % (int(skip*sample_rate/junkFrame.payload.data.size), int(skip*sample_rate/junkFrame.payload.data.size)*junkFrame.payload.data.size/sample_rate))
         
     k = 0
     #k = 1
     prevTime = [0, 0, 0, 0]
     prevDate = ['', '', '', '']
     prevNumb = [0, 0, 0, 0]
-    for i in xrange(1):
-        currFrame = usrp.readFrame(fh)
-        beam, tune, pol = currFrame.parseID()
+    for i in range(1):
+        currFrame = usrp.read_frame(fh)
+        beam, tune, pol = currFrame.id
         rID = 2*(tune-1) + pol
         
-        prevTime[rID] = currFrame.data.timeTag
-        prevDate[rID] = ephem.Date(astro.unix_to_utcjd(currFrame.getTime()) - astro.DJD_OFFSET)
+        prevTime[rID] = currFrame.payload.timetag
+        prevDate[rID] = currFrame.time.datetime
         prevNumb[rID] = 1 + k // 1
         #prevNumb[rID] = k
         
@@ -74,14 +66,14 @@ def main(args):
         
     while True:
         try:
-            currFrame = usrp.readFrame(fh)
+            currFrame = usrp.read_frame(fh)
         except:
             break
             
-        beam, tune, pol = currFrame.parseID()
+        beam, tune, pol = currFrame.id
         rID = 2*(tune-1) + pol
-        currTime = currFrame.data.timeTag
-        currDate = ephem.Date(astro.unix_to_utcjd(currFrame.getTime()) - astro.DJD_OFFSET)
+        currTime = currFrame.payload.timetag
+        currDate = currFrame.time.datetime
         currNumb = 1 + k // 1
         #currNumb = k
         

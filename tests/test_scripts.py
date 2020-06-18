@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-
 """
 Unit tests for the various USRP scripts.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import unittest
 import glob
@@ -56,7 +54,7 @@ def _test_generator(script):
     """
     
     def test(self):
-        out, err = lint.py_run("%s -E" % script, return_std=True)
+        out, err = lint.py_run("%s -E --extension-pkg-whitelist=numpy" % script, return_std=True)
         out_lines = out.read().split('\n')
         err_lines = err.read().split('\n')
         out.close()

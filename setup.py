@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 
 import glob
@@ -34,9 +32,9 @@ setup(
     packages             = find_packages(exclude="tests"), 
     namespace_packages   = ['lsl_toolkits',],
     scripts              = glob.glob('scripts/*.py'), 
-    python_requires      = '>=2.6, <3', 
+    python_requires      = '>=2.7', 
     setup_requires       = ['numpy>=1.2'], 
-    install_requires     = ['numpy>=1.2', 'lsl>=1.2.4, <1.3'],
+    install_requires     = ['numpy>=1.2', 'lsl==1.3.dev0'],
     include_package_data = True,  
     zip_safe             = False,  
     test_suite           = "tests"
