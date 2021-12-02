@@ -1,7 +1,8 @@
 LSL Toolkit for GNURadio/USRP Data
 ==================================
 
-[![Travis](https://travis-ci.com/lwa-project/usrp.svg?branch=master)](https://travis-ci.com/lwa-project/ursp.svg?branch=master)  [![Coverage Status](https://coveralls.io/repos/github/lwa-project/usrp/badge.svg?branch=master)](https://coveralls.io/github/lwa-project/usrp?branch=master)
+[![Build and Test](https://github.com/lwa-project/usrp/actions/workflows/main.yml/badge.svg)](https://github.com/lwa-project/usrp/actions/workflows/main.yml)  [![codecov](https://codecov.io/gh/lwa-project/usrp/branch/master/graph/badge.svg?token=2ABAOPIS0G)](https://codecov.io/gh/lwa-project/usrp)
+
 
 DESCRIPTION
 -----------
